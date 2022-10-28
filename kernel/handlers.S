@@ -1,0 +1,319 @@
+.global g_KernStackTop
+
+.global IntException_Handler
+.macro ex_int_handler irq=0
+.global Int\irq\()h_AsmStub
+Int\irq\()h_AsmStub:
+    cld
+    pushl %eax
+    movl %esp, %eax # Save stack address
+    addl $4, %eax
+
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %edi
+    pushl %esi
+    pushl %ebp
+    movl %esp, %ebp
+
+    pushl %eax
+    movl $0x\irq, %eax
+    pushl %eax
+    calll IntException_Handler
+
+    movl %ebp, %esp
+    popl %ebp
+    popl %esi
+    popl %edi
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    iretl
+.endm
+
+.macro int_handler irq=0
+.global Int\irq\()h_Handler
+.global Int\irq\()h_AsmStub
+Int\irq\()h_AsmStub:
+    cld
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %edi
+    pushl %esi
+    pushl %ebp
+    movl %esp, %ebp
+
+    calll Int\irq\()h_Handler
+
+    movl %ebp, %esp
+    popl %ebp
+    popl %esi
+    popl %edi
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    iretl
+.endm
+
+ex_int_handler 00
+ex_int_handler 01
+ex_int_handler 02
+ex_int_handler 03
+ex_int_handler 04
+ex_int_handler 05
+ex_int_handler 06
+ex_int_handler 07
+ex_int_handler 08
+ex_int_handler 09
+ex_int_handler 0A
+ex_int_handler 0B
+ex_int_handler 0C
+ex_int_handler 0D
+ex_int_handler 0E
+ex_int_handler 0F
+ex_int_handler 10
+ex_int_handler 11
+ex_int_handler 12
+ex_int_handler 13
+ex_int_handler 14
+ex_int_handler 15
+ex_int_handler 16
+ex_int_handler 17
+ex_int_handler 18
+ex_int_handler 19
+ex_int_handler 1A
+ex_int_handler 1B
+ex_int_handler 1C
+ex_int_handler 1D
+ex_int_handler 1E
+ex_int_handler 1F
+
+int_handler 20
+int_handler 21
+int_handler 22
+int_handler 23
+int_handler 24
+int_handler 25
+int_handler 26
+int_handler 27
+int_handler 28
+int_handler 29
+int_handler 2A
+int_handler 2B
+int_handler 2C
+int_handler 2D
+int_handler 2E
+int_handler 2F
+int_handler 30
+int_handler 31
+int_handler 32
+int_handler 33
+int_handler 34
+int_handler 35
+int_handler 36
+int_handler 37
+int_handler 38
+int_handler 39
+int_handler 3A
+int_handler 3B
+int_handler 3C
+int_handler 3D
+int_handler 3E
+int_handler 3F
+int_handler 40
+int_handler 41
+int_handler 42
+int_handler 43
+int_handler 44
+int_handler 45
+int_handler 46
+int_handler 47
+int_handler 48
+int_handler 49
+int_handler 4A
+int_handler 4B
+int_handler 4C
+int_handler 4D
+int_handler 4E
+int_handler 4F
+int_handler 50
+int_handler 51
+int_handler 52
+int_handler 53
+int_handler 54
+int_handler 55
+int_handler 56
+int_handler 57
+int_handler 58
+int_handler 59
+int_handler 5A
+int_handler 5B
+int_handler 5C
+int_handler 5D
+int_handler 5E
+int_handler 5F
+int_handler 60
+int_handler 61
+int_handler 62
+int_handler 63
+int_handler 64
+int_handler 65
+int_handler 66
+int_handler 67
+int_handler 68
+int_handler 69
+int_handler 6A
+int_handler 6B
+int_handler 6C
+int_handler 6D
+int_handler 6E
+int_handler 6F
+int_handler 70
+int_handler 71
+int_handler 72
+int_handler 73
+int_handler 74
+int_handler 75
+int_handler 76
+int_handler 77
+int_handler 78
+int_handler 79
+int_handler 7A
+int_handler 7B
+int_handler 7C
+int_handler 7D
+int_handler 7E
+int_handler 7F
+int_handler 80
+int_handler 81
+int_handler 82
+int_handler 83
+#int_handler 84 -- used as a task gate
+int_handler 85
+int_handler 86
+int_handler 87
+int_handler 88
+int_handler 89
+int_handler 8A
+int_handler 8B
+int_handler 8C
+int_handler 8D
+int_handler 8E
+int_handler 8F
+int_handler 90
+int_handler 91
+int_handler 92
+int_handler 93
+int_handler 94
+int_handler 95
+int_handler 96
+int_handler 97
+int_handler 98
+int_handler 99
+int_handler 9A
+int_handler 9B
+int_handler 9C
+int_handler 9D
+int_handler 9E
+int_handler 9F
+int_handler A0
+int_handler A1
+int_handler A2
+int_handler A3
+int_handler A4
+int_handler A5
+int_handler A6
+int_handler A7
+int_handler A8
+int_handler A9
+int_handler AA
+int_handler AB
+int_handler AC
+int_handler AD
+int_handler AE
+int_handler AF
+int_handler B0
+int_handler B1
+int_handler B2
+int_handler B3
+int_handler B4
+int_handler B5
+int_handler B6
+int_handler B7
+int_handler B8
+int_handler B9
+int_handler BA
+int_handler BB
+int_handler BC
+int_handler BD
+int_handler BE
+int_handler BF
+int_handler C0
+int_handler C1
+int_handler C2
+int_handler C3
+int_handler C4
+int_handler C5
+int_handler C6
+int_handler C7
+int_handler C8
+int_handler C9
+int_handler CA
+int_handler CB
+int_handler CC
+int_handler CD
+int_handler CE
+int_handler CF
+int_handler D0
+int_handler D1
+int_handler D2
+int_handler D3
+int_handler D4
+int_handler D5
+int_handler D6
+int_handler D7
+int_handler D8
+int_handler D9
+int_handler DA
+int_handler DB
+int_handler DC
+int_handler DD
+int_handler DE
+int_handler DF
+int_handler E0
+int_handler E1
+int_handler E2
+int_handler E3
+int_handler E4
+int_handler E5
+int_handler E6
+int_handler E7
+int_handler E8
+int_handler E9
+int_handler EA
+int_handler EB
+int_handler EC
+int_handler ED
+int_handler EE
+int_handler EF
+int_handler F0
+int_handler F1
+int_handler F2
+int_handler F3
+int_handler F4
+int_handler F5
+int_handler F6
+int_handler F7
+int_handler F8
+int_handler F9
+int_handler FA
+int_handler FB
+int_handler FC
+int_handler FD
+int_handler FE
+int_handler FF

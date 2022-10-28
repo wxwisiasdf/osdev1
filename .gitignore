@@ -1,0 +1,13 @@
+*.d
+*.o
+*.exe
+*.iso
+*.tar
+*.tar.xz
+gcm.cache/
+.vscode/
+*.elf
+isodir/
+
+qemu.txt
+dump.txt
