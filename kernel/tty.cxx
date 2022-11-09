@@ -1,4 +1,5 @@
 #include <optional>
+#include <string>
 #include <type_traits>
 import uart;
 import locale;
@@ -160,3 +161,22 @@ void TTY::Print(const char *fmt, ...)
             kernelTerms[i]->Print(tmpbuf);
     va_end(args);
 }
+
+void TTY::Print(const char32_t *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char tmpbuf[128] = {};
+
+    std::string normalFmt;
+    while (*fmt != U'\0')
+        normalFmt.push_back(static_cast<char>(*fmt));
+    
+    TTY::Print_1(tmpbuf, sizeof(tmpbuf), normalFmt.c_str(), args);
+
+    for (size_t i = 0; i < ARRAY_SIZE(kernelTerms); i++)
+        if (kernelTerms[i] != nullptr)
+            kernelTerms[i]->Print(tmpbuf);
+    va_end(args);
+}
+

@@ -2,40 +2,71 @@
 #define VFS_HXX 1
 
 #include <cstddef>
-
-#define MAX_DIRNAME 8
-#define MAX_DIR_FILES 32
-
-#define MAX_FILENAME 32
+#include <vector>
+#include <string>
+#include <string_view>
+#include <algorithm>
+#include <memory>
+#include <new>
 
 namespace Filesystem
 {
     struct File
     {
-        char name[MAX_FILENAME] = {};
+        std::u32string name;
+        enum Type
+        {
+            DISK_FILE,
+            REPORT,
+        } type;
 
         File() = default;
-        File(File &) = default;
+        File(const std::u32string& _name, Type _type)
+            : name{ _name },
+            type{ _type }
+        {
+
+        }
+        File(const File &) = default;
         File(File &&) = default;
         File &operator=(const File &) = default;
+        File &operator=(File &&) = default;
         ~File() = default;
     };
 
     struct Directory
     {
-        char name[MAX_DIRNAME] = {};
-        File nodes[MAX_DIR_FILES] = {};
+        std::u32string name;
+        std::vector<File> files;
+        std::vector<Directory> dirs;
 
         Directory() = default;
-        Directory(Directory &) = default;
+        Directory(const std::u32string& _name)
+            : name{ _name }
+        {
+
+        }
+        Directory(const Directory &) = default;
         Directory(Directory &&) = default;
         Directory &operator=(const Directory &) = default;
+        Directory &operator=(Directory &&) = default;
         ~Directory() = default;
 
-        Directory *GetDirectory(const char *name);
+        File& AddFile(const std::u32string_view& name, Filesystem::File::Type type);
+        Directory *GetDirectory(const std::u32string_view& name);
+
+        void RemoveFile(const std::u32string_view& name)
+        {
+            std::erase_if(this->files, [name](const auto& e) {
+                return e.name == name;
+            });
+        }
+
+        File *GetFile(const std::u32string_view& path);
     };
 
-    Filesystem::Directory &NewDirectory(const char *name);
+    void Init();
+    Filesystem::Directory &AddDirectory(const std::u32string_view& name);
 }
 
 #endif

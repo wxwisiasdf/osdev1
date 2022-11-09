@@ -4,9 +4,9 @@
 #include <optional>
 #include <atomic>
 #include <variant>
+#include <vector>
 #include "video.hxx"
 #include "tty.hxx"
-#define MAX_CHILD_WIDGETS 32
 
 namespace UI
 {
@@ -42,8 +42,7 @@ namespace UI
         const char *text = nullptr;
         const char32_t *tooltipText32 = nullptr;
         const char32_t *text32 = nullptr;
-        Widget *children[MAX_CHILD_WIDGETS] = {};
-        size_t n_children = 0;
+        std::vector<UI::Widget *> children;
         /// @brief Whetever this widget needs to be redrawn
         bool needs_redraw = true;
         bool skeleton = false; // Only redraw skeleton
@@ -79,7 +78,16 @@ namespace UI
         void SetTooltipText(const char *text);
         void SetTooltipText(const char32_t *text);
         const char *GetTooltipText() const;
-        void AddChild(Widget &w);
+        void AddChildDirect(Widget &w);
+
+        template<typename T, typename ...Ts>
+        T& AddChild(Ts&&... args)
+        {
+            auto* p = new T(std::forward<Ts>(args...)...);
+            this->AddChildDirect(*p);
+            return *p;
+        }
+
         void DrawShadow(Color outer_color, Color inner_color, Color mid_color);
         void Redraw();
         void SetSkeleton(bool value);
@@ -177,10 +185,13 @@ namespace UI
         {
             SOLID,
             DIAGONAL_LINES,
-            MULTIPLY_OFFSET,
-        } background = Background::SOLID;
-        Color primaryColor = Color(0x6547F0);
-        Color secondaryColor;
+            MULTIPLY_GRAPH,
+            XOR_GRAPH,
+            AND_GRAPH,
+            OR_GRAPH,
+        } background = Background::OR_GRAPH;
+        Color primaryColor = Color(0x0000FF);
+        Color secondaryColor = Color(0x008080);
 
         Desktop();
         ~Desktop() = default;

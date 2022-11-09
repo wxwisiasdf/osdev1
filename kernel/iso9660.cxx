@@ -13,7 +13,10 @@ ISO9660::Device::Device(ATAPI::Device &_dev)
 std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEntryLBA(const char *name)
 {   
     if (!this->dev.Read(0x10, (uint8_t *)&this->pvd, sizeof(this->pvd)))
+    {
+        TTY::Print("iso9660: Unable to read pvd?\n");
         return std::optional<DirectorySummaryEntry>{};
+    }
     TTY::Print("iso9660: Version %u, code %u, LBA L-type %u, opt %u\n", this->pvd.version, this->pvd.code, this->pvd.type_l_path_lba, this->pvd.opt_type_l_path_lba);
 
     const auto& rootEntry = *std::launder(reinterpret_cast<const ISO9660::DirectoryEntry *>(this->pvd.root_dir_raw));
@@ -41,10 +44,13 @@ std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEnt
             tmpbuf[entry.file_ident_len >= sizeof(tmpbuf) ? sizeof(tmpbuf) - 1 : entry.file_ident_len] = '\0';
             TTY::Print("iso9660: Entry %s (%x)\n", tmpbuf, entry.file_ident_len);
             size_t len = sizeof(entry) + entry.file_ident_len;
-            if (entry.length < len) {
+            if (entry.length < len)
+            {
                 TTY::Print("iso9660: Entry size is corrupt length=%x, ident_len=%x\n", entry.length, entry.file_ident_len);
                 return std::optional<DirectorySummaryEntry>{};
-            } else {
+            }
+            else
+            {
                 len = entry.length;
                 if (entry.file_ident_len == std::strlen(name) && !std::memcmp(name, tmpbuf, entry.file_ident_len))
                 {
@@ -75,12 +81,12 @@ bool ISO9660::Device::ReadFile(const char *name, bool (*func)(void *data, size_t
     {
         auto len = sizeof(this->block_buffer);
         if (!this->dev.Read(dirEntry->lba, (uint8_t *)&this->block_buffer, len))
-            break;
+            return false;
         if (!func(this->block_buffer, len))
             return true;
         
         dirEntry->length -= len;
         dirEntry->lba++;
     }
-    return false;
+    return true;
 }

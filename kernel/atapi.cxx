@@ -129,11 +129,15 @@ bool ATAPI::Device::SendCommand(uint8_t *cmd, size_t size)
         IO_Out16(this->bus, ((uint16_t *)cmd)[i]);
 
     // Wait for IRQ that says the data is ready
+    auto& isReady = dataReady[this->bus == ATAPI::Device::Bus::PRIMARY ? 0 : 1];
     TTY::Print("atapi: Wait for IRQ\n");
-    if (IO_TimeoutWait(1000, [this]() -> bool
-                       { return dataReady[this->bus == ATAPI::Device::Bus::PRIMARY ? 0 : 1]; }))
+    if (!IO_TimeoutWait(30 * 1000, [this, &isReady]() -> bool
+                       { return isReady; }))
+    {
+        TTY::Print("atapi: IRQ never arrived\n");
         return false;
-    dataReady[this->bus == ATAPI::Device::Bus::PRIMARY ? 0 : 1] = false;
+    }
+    isReady = false;
     TTY::Print("atapi: Command sent succesfully\n");
     return true;
 }

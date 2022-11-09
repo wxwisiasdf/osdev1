@@ -6,7 +6,7 @@
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 
-extern std::optional<UI::Desktop> desktop;
+extern std::optional<UI::Desktop> g_Desktop;
 int UDOS_32Main(char32_t[])
 {
     static std::optional<UI::Window> calcWindow;
@@ -16,7 +16,7 @@ int UDOS_32Main(char32_t[])
     calcWindow->width = 80;
     calcWindow->height = 128;
     calcWindow->SetText("Calculator");
-    desktop->AddChild(calcWindow.value());
+    g_Desktop->AddChildDirect(calcWindow.value());
 
     static std::optional<UI::Button> numBtns[10];
     static const char *digitList[] = {
@@ -34,7 +34,7 @@ int UDOS_32Main(char32_t[])
         numBtns[i]->width = 12;
         numBtns[i]->height = 12;
         numBtns[i]->SetText(digitList[i]);
-        calcWindow->AddChild(numBtns[i].value());
+        calcWindow->AddChildDirect(numBtns[i].value());
     }
 
     static std::optional<UI::Button> eqBtn;
@@ -44,7 +44,7 @@ int UDOS_32Main(char32_t[])
     eqBtn->width = 12;
     eqBtn->height = 12 + 16;
     eqBtn->SetText("=");
-    calcWindow->AddChild(eqBtn.value());
+    calcWindow->AddChildDirect(eqBtn.value());
 
     static std::optional<UI::Button> minusBtn;
     minusBtn.emplace();
@@ -53,7 +53,7 @@ int UDOS_32Main(char32_t[])
     minusBtn->width = 12;
     minusBtn->height = 12;
     minusBtn->SetText("-");
-    calcWindow->AddChild(minusBtn.value());
+    calcWindow->AddChildDirect(minusBtn.value());
 
     while (!calcWindow->isClosed)
         Task::Switch();

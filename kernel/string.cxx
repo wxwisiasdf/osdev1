@@ -21,6 +21,49 @@ void *memcpy(void *s1, const void *s2, size_t n)
     return s1;
 }
 
+namespace std
+{
+    void __throw_length_error(char const*)
+    {
+        abort();
+    }
+
+    void __throw_logic_error(char const*)
+    {
+        abort();
+    }
+
+    void __throw_bad_array_new_length()
+    {
+        abort();
+    }
+
+    void __throw_bad_alloc()
+    {
+        abort();
+    }
+}
+
+void *memmove(void *dest, const void *src, size_t n)
+{
+    const char *c_src = (const char *)src;
+    char *c_dest = (char *)dest;
+    if((uintptr_t)c_dest < (uintptr_t)c_src) {
+        while(n) {
+            *(c_dest++) = *(c_src++);
+            --n;
+        }
+    } else {
+        c_dest += n;
+        c_src += n;
+        while(n) {
+            *(c_dest--) = *(c_src--);
+            --n;
+        }
+    }
+    return c_dest;
+}
+
 void *memset(void *s, int ch, size_t n)
 {
     auto *us = reinterpret_cast<uint8_t *>(s);

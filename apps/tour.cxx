@@ -6,7 +6,7 @@
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 
-extern std::optional<UI::Desktop> desktop;
+extern std::optional<UI::Desktop> g_Desktop;
 int UDOS_32Main(char32_t[])
 {
     static std::optional<UI::Window> tourWin;
@@ -16,7 +16,7 @@ int UDOS_32Main(char32_t[])
     tourWin->width = 250;
     tourWin->height = 150;
     tourWin->Decorate();
-    desktop->AddChild(tourWin.value());
+    g_Desktop->AddChildDirect(tourWin.value());
 
     static std::optional<UI::Textbox> tourTextbox;
     tourTextbox.emplace();
@@ -33,7 +33,7 @@ int UDOS_32Main(char32_t[])
     tourTextbox->x = tourTextbox->y = 0;
     tourTextbox->width = tourWin->width - 12;
     tourTextbox->height = tourWin->height - 32;
-    tourWin->AddChild(tourTextbox.value());
+    tourWin->AddChildDirect(tourTextbox.value());
 
     static std::optional<UI::Button> mysteryBtn[4];
     mysteryBtn[0].emplace();
@@ -46,7 +46,7 @@ int UDOS_32Main(char32_t[])
     mysteryBtn[0]->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
         g_KFrameBuffer.mouseMode = Framebuffer::MouseMode::WAIT;
     });
-    tourWin->AddChild(mysteryBtn[0].value());
+    tourWin->AddChildDirect(mysteryBtn[0].value());
 
     mysteryBtn[1].emplace();
     mysteryBtn[1]->SetText("2");
@@ -58,7 +58,7 @@ int UDOS_32Main(char32_t[])
     mysteryBtn[1]->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
         tourTextbox->SetText(U"Fuck monolithic kernels");
     });
-    tourWin->AddChild(mysteryBtn[1].value());
+    tourWin->AddChildDirect(mysteryBtn[1].value());
 
     mysteryBtn[2].emplace();
     mysteryBtn[2]->SetText("3");
@@ -68,12 +68,12 @@ int UDOS_32Main(char32_t[])
     mysteryBtn[2]->height = 12;
     mysteryBtn[2]->SetTooltipText(U"A mystery button!, what will it do? \x01F60A");
     mysteryBtn[2]->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-        desktop->background = UI::Desktop::Background::DIAGONAL_LINES;
-        desktop->primaryColor = Color(desktop->primaryColor.rgba + 0x46323863);
-        desktop->secondaryColor = Color(desktop->primaryColor.rgba + 0x69420124);
-        desktop->Redraw();
+        g_Desktop->background = UI::Desktop::Background::DIAGONAL_LINES;
+        g_Desktop->primaryColor = Color(g_Desktop->primaryColor.rgba + 0x46323863);
+        g_Desktop->secondaryColor = Color(g_Desktop->primaryColor.rgba + 0x69420124);
+        g_Desktop->Redraw();
     });
-    tourWin->AddChild(mysteryBtn[2].value());
+    tourWin->AddChildDirect(mysteryBtn[2].value());
 
     mysteryBtn[3].emplace();
     mysteryBtn[3]->SetText("4");
@@ -83,12 +83,12 @@ int UDOS_32Main(char32_t[])
     mysteryBtn[3]->height = 12;
     mysteryBtn[3]->SetTooltipText(U"A mystery button!, what will it do? \x01F60A");
     mysteryBtn[3]->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-        desktop->background = UI::Desktop::Background::MULTIPLY_OFFSET;
-        desktop->primaryColor = Color(desktop->primaryColor.rgba + 0x46323863);
-        desktop->secondaryColor = Color(desktop->primaryColor.rgba + 0x69420124);
-        desktop->Redraw();
+        g_Desktop->background = UI::Desktop::Background::MULTIPLY_GRAPH;
+        g_Desktop->primaryColor = Color(g_Desktop->primaryColor.rgba + 0x46323863);
+        g_Desktop->secondaryColor = Color(g_Desktop->primaryColor.rgba + 0x69420124);
+        g_Desktop->Redraw();
     });
-    tourWin->AddChild(mysteryBtn[3].value());
+    tourWin->AddChildDirect(mysteryBtn[3].value());
 
     while (!tourWin->isClosed)
         Task::Switch();

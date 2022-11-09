@@ -1,45 +1,59 @@
+#include <string_view>
+#include <utility>
+#include <algorithm>
+#include <optional>
 #include "vfs.hxx"
+#include "tty.hxx"
 
-#define MAX_DIRS 64 // Max directories in the entire systems
+static std::optional<Filesystem::Directory> g_RootDir;
 
-static Filesystem::Directory g_Dirs[MAX_DIRS] = {};
-
-Filesystem::Directory &Filesystem::NewDirectory(const char *name)
+void Filesystem::Init()
 {
-    for (size_t i = 0; i < MAX_DIRS; i++)
-    {
-        auto &dir = g_Dirs[i];
-        if (dir.name[0] == '\0')
-        {
-            for (size_t j = 0; j < MAX_DIRNAME; j++)
-            {
-                dir.name[j] = name[j];
-                if (name[j] == '\0')
-                    break;
-            }
-            return dir;
-        }
-    }
-    __builtin_unreachable();
+    g_RootDir.emplace();
+    
+    auto& systemDir = Filesystem::AddDirectory(U"system");
+    systemDir.AddFile(U"orthx", Filesystem::File::Type::REPORT);
+    systemDir.AddFile(U"servs", Filesystem::File::Type::REPORT);
+    systemDir.AddFile(U"msss0", Filesystem::File::Type::REPORT);
+    systemDir.AddFile(U"tsss0", Filesystem::File::Type::REPORT);
+    systemDir.AddFile(U"ssss0", Filesystem::File::Type::REPORT);
+    systemDir.AddFile(U"?", Filesystem::File::Type::REPORT);
+    systemDir.GetFile(U"ssss0.");
 }
 
-Filesystem::Directory *Filesystem::Directory::GetDirectory(const char *name)
+Filesystem::Directory &Filesystem::AddDirectory(const std::u32string_view& name)
 {
-    for (size_t i = 0; i < MAX_DIRS; i++)
-    {
-        auto &dir = g_Dirs[i];
-        bool found = true;
-        for (size_t j = 0; j < MAX_DIRNAME; j++)
-        {
-            if (dir.name[j] != name[j])
-            {
-                found = false;
-                break;
-            }
-        }
+    return g_RootDir->dirs.emplace_back(std::u32string(name));
+}
 
-        if (found)
-            return &g_Dirs[i];
+Filesystem::File& Filesystem::Directory::AddFile(const std::u32string_view& name, Filesystem::File::Type type)
+{
+    TTY::Print(name.data());
+    Filesystem::File file(std::u32string(name), type);
+    this->files.push_back(file);
+    return this->files.back();
+}
+
+Filesystem::Directory *Filesystem::Directory::GetDirectory(const std::u32string_view& name)
+{
+    for (auto& dir : this->dirs)
+        if (dir.name == name)
+            return &dir;
+    return nullptr;
+}
+
+Filesystem::File *Filesystem::Directory::GetFile(const std::u32string_view& path)
+{
+    std::u32string part;
+    std::u32string fullPath(path);
+
+    std::size_t lastPos = 0;
+    for (auto pos = fullPath.find_first_of(U'.', 0); pos != std::string::npos; pos = fullPath.find_first_of(U'.', lastPos))
+    {
+        part = fullPath.substr(lastPos, pos);
+        TTY::Print(part.c_str());
+        lastPos = pos;
     }
+
     return nullptr;
 }

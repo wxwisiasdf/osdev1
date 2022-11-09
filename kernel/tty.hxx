@@ -87,6 +87,7 @@ namespace TTY
 
     void Print_1(char *buffer, size_t size, const char *fmt, va_list args);
     void Print(const char *fmt, ...);
+    void Print(const char32_t *fmt, ...);
 }
 
 #endif

@@ -6,26 +6,23 @@
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 
-extern std::optional<UI::Desktop> desktop;
+extern std::optional<UI::Desktop> g_Desktop;
 int UDOS_32Main(char32_t[])
 {
-    static std::optional<UI::Window> systemWin;
-    systemWin.emplace();
-    systemWin->SetText("System information");
-    systemWin->x = 0;
-    systemWin->y = 0;
-    systemWin->width = 200;
-    systemWin->height = 150;
-    systemWin->Decorate();
-    desktop->AddChild(systemWin.value());
+    auto& systemWin = g_Desktop->AddChild<UI::Window>();
+    systemWin.SetText("System information");
+    systemWin.x = 0;
+    systemWin.y = 0;
+    systemWin.width = 200;
+    systemWin.height = 150;
+    systemWin.Decorate();
 
-    static std::optional<UI::Textbox> infoTextbox;
-    infoTextbox.emplace();
-    infoTextbox->SetText("...");
-    infoTextbox->y = infoTextbox->x = 0;
-    infoTextbox->width = systemWin->width - 24;
-    infoTextbox->height = systemWin->height - 32;
-    infoTextbox->OnUpdate = [](UI::Widget& w) {
+    auto& infoTextbox = systemWin.AddChild<UI::Textbox>();
+    infoTextbox.SetText("...");
+    infoTextbox.y = infoTextbox.x = 0;
+    infoTextbox.width = systemWin.width - 24;
+    infoTextbox.height = systemWin.height - 32;
+    infoTextbox.OnUpdate = [](UI::Widget& w) {
         auto& o = static_cast<UI::Textbox&>(w);
         auto fmtPrint = [](const char *fmt, ...) {
             va_list args;
@@ -38,10 +35,9 @@ int UDOS_32Main(char32_t[])
         auto ts = Task::GetSummary();
         o.SetText(fmtPrint("A-Tasks: %u\nT-Tasks: %u", ts.nActive, ts.nTotal));
     };
-    infoTextbox->OnUpdate(infoTextbox.value());
-    systemWin->AddChild(infoTextbox.value());
+    infoTextbox.OnUpdate(infoTextbox);
 
-    while (!systemWin->isClosed)
+    while (!systemWin.isClosed)
         Task::Switch();
     return 0;
 }

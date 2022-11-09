@@ -6,7 +6,7 @@
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 
-extern std::optional<UI::Desktop> desktop;
+extern std::optional<UI::Desktop> g_Desktop;
 int UDOS_32Main(char32_t[])
 {
     static std::optional<UI::Window> runWin;
@@ -16,7 +16,7 @@ int UDOS_32Main(char32_t[])
     runWin->width = 200;
     runWin->height = 64;
     runWin->Decorate();
-    desktop->AddChild(runWin.value());
+    g_Desktop->AddChildDirect(runWin.value());
 
     static std::optional<UI::Textbox> filepathTextbox;
     filepathTextbox.emplace();
@@ -28,14 +28,13 @@ int UDOS_32Main(char32_t[])
     filepathTextbox->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
 
     });
-    runWin->AddChild(filepathTextbox.value());
+    runWin->AddChildDirect(filepathTextbox.value());
 
     static std::optional<UI::Button> runBtn;
     runBtn.emplace();
-    runBtn->flex = startMenu->flex;
     runBtn->x = 0;
     runBtn->y = 16;
-    runBtn->width = startMenu->width - 12;
+    runBtn->width = runWin->width - 12;
     runBtn->height = 12;
     runBtn->SetText("Run");
     runBtn->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
@@ -47,13 +46,13 @@ int UDOS_32Main(char32_t[])
             errorWin->width = 150;
             errorWin->height = 48;
             errorWin->Decorate();
-            desktop->AddChild(errorWin.value());
+            g_Desktop->AddChildDirect(errorWin.value());
             while (!errorWin->isClosed)
                 Task::Switch();
             errorWin.reset();
         }, nullptr, false);
     });
-    runWin->AddChild(runBtn.value());
+    runWin->AddChildDirect(runBtn.value());
     while (!runWin->isClosed)
         Task::Switch();
     return 0;

@@ -24,18 +24,18 @@
 .globl  start, _start
 start:
 _start:
-    jmp     multiboot_entry
+    jmp multiboot_entry
     /*  Multiboot header. */
     .align MULTIBOOT_HEADER_ALIGN
 multiboot_header:
     /*  magic */
-    .long   MULTIBOOT2_HEADER_MAGIC
+    .long MULTIBOOT2_HEADER_MAGIC
     /*  ISA: i386 */
-    .long   GRUB_MULTIBOOT_ARCHITECTURE_I386
+    .long GRUB_MULTIBOOT_ARCHITECTURE_I386
     /*  Header length. */
-    .long   multiboot_header_end - multiboot_header
+    .long multiboot_header_end - multiboot_header
     /*  checksum */
-    .long   -(MULTIBOOT2_HEADER_MAGIC + GRUB_MULTIBOOT_ARCHITECTURE_I386 + (multiboot_header_end - multiboot_header))
+    .long -(MULTIBOOT2_HEADER_MAGIC + GRUB_MULTIBOOT_ARCHITECTURE_I386 + (multiboot_header_end - multiboot_header))
 framebuffer_tag_start:
     .short MULTIBOOT_HEADER_TAG_FRAMEBUFFER
     .short MULTIBOOT_HEADER_TAG_OPTIONAL
@@ -50,13 +50,13 @@ address_tag_start:
     .short MULTIBOOT_HEADER_TAG_OPTIONAL
     .long address_tag_end - address_tag_start
     /*  header_addr */
-    .long   multiboot_header
+    .long multiboot_header
     /*  load_addr */
-    .long   _start
+    .long _start
     /*  load_end_addr */
-    .long   _edata
+    .long _edata
     /*  bss_end_addr */
-    .long   _end
+    .long _end
 address_tag_end:
 entry_address_tag_start:
     .short MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS

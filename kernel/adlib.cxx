@@ -75,13 +75,13 @@ void AdLib::Device::Write(unsigned char reg, unsigned char val) const
     IO_Out8(ADLIB_ADDRESS, reg);
 
     // Read status 6 times
-    for (int i = 0; i < 6; i++)
+    for (size_t i = 0; i < 6; i++)
         IO_In8(ADLIB_ADDRESS);
     
     // Write the value once adlib has acknowledged the register
     // we wanted to write to
     IO_Out8(ADLIB_DATA, val);
-    for (int i = 0; i < 36; i++)
+    for (size_t i = 0; i < 36; i++)
         IO_In8(ADLIB_ADDRESS);
 }
 

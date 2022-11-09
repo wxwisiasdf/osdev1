@@ -16,6 +16,72 @@ export module ps2;
 #define PS2_STATUS 0x64
 #define PS2_COMMAND 0x64
 
+export namespace Keysym {
+    consteval char KeyPad(int x)
+    {
+        if(Locale::IsDigit(x))
+            return (char)(0x80 + Locale::ToXDigit(x));
+        
+        if(x == '+')
+            return (char)(0x80 + 10 + 1);
+        if(x == '-')
+            return (char)(0x80 + 10 + 2);
+        if(x == '.')
+            return (char)(0x80 + 10 + 3);
+        if(x == '*')
+            return (char)(0x80 + 10 + 4);
+        if(x == '/')
+            return (char)(0x80 + 10 + 5);
+        return 0;
+    }
+
+    consteval char KeyAltLeft()
+    {
+        return 0xEB;
+    }
+
+    consteval char KeyCapsLock()
+    {
+        return 0xEC;
+    }
+
+    consteval char KeyScrollLock()
+    {
+        return 0xEE;
+    }
+
+    consteval char KeyNumLock()
+    {
+        return 0xEF;
+    }
+
+    // Fn is from 0xF0 to 0xFB
+    consteval char KeyFn(int x)
+    {
+        return (char)(0xF0 + x - 1);
+    }
+
+    consteval char KeyCtrlLeft()
+    {
+        return 0xFC;
+    }
+
+    consteval char KeyCtrlRight()
+    {
+        return 0xFD;
+    }
+
+    consteval char KeyShiftLeft()
+    {
+        return 0xFE;
+    }
+
+    consteval char KeyShiftRight()
+    {
+        return 0xFF;
+    }
+};
+
 export namespace PS2 {
     struct Keyboard;
     static Keyboard *g_ps2_keyboard = nullptr;
@@ -209,28 +275,6 @@ export namespace PS2 {
         }
     };
 
-#define KEY_SCROLLOCK (char)(0xEE)
-#define KEY_NUMLOCK (char)(0xEF)
-#define KEY_F1 (char)(0xF0)
-#define KEY_F2 (char)(0xF1)
-#define KEY_F3 (char)(0xF2)
-#define KEY_F4 (char)(0xF3)
-#define KEY_F5 (char)(0xF4)
-#define KEY_F6 (char)(0xF5)
-#define KEY_F7 (char)(0xF6)
-#define KEY_F8 (char)(0xF7)
-#define KEY_F9 (char)(0xF8)
-#define KEY_F10 (char)(0xF9)
-#define KEY_F11 (char)(0xFA)
-#define KEY_F12 (char)(0xFB)
-#define KEY_CTRL_LEFT (char)(0xFC)
-#define KEY_SHIFT_LEFT (char)(0xFD)
-#define KEY_SHIFT_RIGHT (char)(0xFE)
-#define KEY_ALT_LEFT (char)(0xFF)
-#define KEY_CAPSLOCK (char)(0x3A)
-#define KEY_KEYPAD(x) \
-    (char)(0x80 | (((x) >= '0' && (x) <= '9') ? ((x) - '0') : ((x)-0x20)))
-
     const static char ps2_set1[] = {
         0,
         0x1B,
@@ -261,7 +305,7 @@ export namespace PS2 {
         '[',
         ']',
         '\n',
-        KEY_CTRL_LEFT,
+        Keysym::KeyCtrlLeft(),
         'A',
         'S',
         'D',
@@ -274,7 +318,7 @@ export namespace PS2 {
         ';',
         '\'',
         '`',
-        KEY_SHIFT_LEFT,
+        Keysym::KeyShiftLeft(),
         '\\',
         'Z',
         'X',
@@ -286,41 +330,41 @@ export namespace PS2 {
         ',',
         '.',
         '/',
-        KEY_SHIFT_RIGHT,
-        KEY_KEYPAD('*'),
-        KEY_ALT_LEFT,
+        Keysym::KeyShiftRight(),
+        Keysym::KeyPad('*'),
+        Keysym::KeyAltLeft(),
         ' ',
-        KEY_CAPSLOCK,
-        KEY_F1,
-        KEY_F2,
-        KEY_F3,
-        KEY_F4,
-        KEY_F5,
-        KEY_F6,
-        KEY_F7,
-        KEY_F8,
-        KEY_F9,
-        KEY_F10,
-        KEY_NUMLOCK,
-        KEY_SCROLLOCK,
-        KEY_KEYPAD('7'),
-        KEY_KEYPAD('8'),
-        KEY_KEYPAD('9'),
-        KEY_KEYPAD('-'),
-        KEY_KEYPAD('4'),
-        KEY_KEYPAD('5'),
-        KEY_KEYPAD('6'),
-        KEY_KEYPAD('+'),
-        KEY_KEYPAD('1'),
-        KEY_KEYPAD('2'),
-        KEY_KEYPAD('3'),
-        KEY_KEYPAD('0'),
-        KEY_KEYPAD('.'),
+        Keysym::KeyCapsLock(),
+        Keysym::KeyFn(1),
+        Keysym::KeyFn(2),
+        Keysym::KeyFn(3),
+        Keysym::KeyFn(4),
+        Keysym::KeyFn(5),
+        Keysym::KeyFn(6),
+        Keysym::KeyFn(7),
+        Keysym::KeyFn(8),
+        Keysym::KeyFn(9),
+        Keysym::KeyFn(10),
+        Keysym::KeyNumLock(),
+        Keysym::KeyScrollLock(),
+        Keysym::KeyPad('7'),
+        Keysym::KeyPad('8'),
+        Keysym::KeyPad('9'),
+        Keysym::KeyPad('-'),
+        Keysym::KeyPad('4'),
+        Keysym::KeyPad('5'),
+        Keysym::KeyPad('6'),
+        Keysym::KeyPad('+'),
+        Keysym::KeyPad('1'),
+        Keysym::KeyPad('2'),
+        Keysym::KeyPad('3'),
+        Keysym::KeyPad('0'),
+        Keysym::KeyPad('.'),
         0,
         0,
         0,
-        KEY_F11,
-        KEY_F12,
+        Keysym::KeyFn(11),
+        Keysym::KeyFn(12),
     };
 
     struct Keyboard
@@ -382,11 +426,11 @@ export namespace PS2 {
             ch = ps2_set1[(ch & (~0x80)) % sizeof(ps2_set1)]; // Translate
             switch (ch)
             {
-            case KEY_CAPSLOCK:
+            case Keysym::KeyCapsLock():
                 this->capslock = true;
                 break;
-            case KEY_SHIFT_LEFT:
-            case KEY_SHIFT_RIGHT:
+            case Keysym::KeyShiftLeft():
+            case Keysym::KeyShiftRight():
                 this->shift = released;
                 break;
             default:

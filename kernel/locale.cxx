@@ -6,12 +6,12 @@ export module locale;
 
 export namespace Locale
 {
-    bool IsDigit(char x)
+    constexpr bool IsDigit(char x)
     {
         return (x == '0' || x == '1' || x == '2' || x == '3' || x == '4' || x == '5' || x == '6' || x == '7' || x == '8' || x == '9');
     }
 
-    char ToUpper(char x)
+    constexpr char ToUpper(char x)
     {
         return x == 'a' ? 'A' : x == 'g' ? 'G'
                             : x == 'm'   ? 'M'
@@ -41,7 +41,7 @@ export namespace Locale
                                         : x;
     }
 
-    char ToLower(char x)
+    constexpr char ToLower(char x)
     {
         return x == 'A' ? 'a' : x == 'G' ? 'g'
                             : x == 'M'   ? 'm'
@@ -71,30 +71,39 @@ export namespace Locale
                                         : x;
     }
 
-    bool IsXDigit(char x)
+    constexpr bool IsXDigit(char x)
     {
         x = ToUpper(x);
         return IsDigit(x) || x == 'A' || x == 'B' || x == 'C' || x == 'D' || x == 'E' || x == 'F';
     }
 
-    char ToChar(int d)
+    constexpr char ToChar(int x)
     {
-        return d == 0 ? '0' : d == 1 ? '1'
-                        : d == 2   ? '2'
-                        : d == 3   ? '3'
-                        : d == 4   ? '4'
-                        : d == 5   ? '5'
-                        : d == 6   ? '6'
-                        : d == 7   ? '7'
-                        : d == 8   ? '8'
-                        : d == 9   ? '9'
-                        : d == 10  ? 'A'
-                        : d == 11  ? 'B'
-                        : d == 12  ? 'C'
-                        : d == 13  ? 'D'
-                        : d == 14  ? 'E'
-                        : d == 15  ? 'F'
+        return x == 0 ? '0' : x == 1 ? '1'
+                        : x == 2   ? '2'
+                        : x == 3   ? '3'
+                        : x == 4   ? '4'
+                        : x == 5   ? '5'
+                        : x == 6   ? '6'
+                        : x == 7   ? '7'
+                        : x == 8   ? '8'
+                        : x == 9   ? '9'
+                        : x == 10  ? 'A'
+                        : x == 11  ? 'B'
+                        : x == 12  ? 'C'
+                        : x == 13  ? 'D'
+                        : x == 14  ? 'E'
+                        : x == 15  ? 'F'
                                     : '.';
+    }
+
+    constexpr int ToXDigit(char x)
+    {
+        if(Locale::IsDigit(x))
+        {
+            return x - '0';
+        }
+        return Locale::ToUpper(x) - 'A';
     }
 
     enum Charset

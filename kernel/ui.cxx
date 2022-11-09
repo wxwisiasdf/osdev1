@@ -1,4 +1,6 @@
 #include <utility>
+#include <algorithm>
+#include "alloc.hxx"
 #include "ui.hxx"
 
 #define MIN(x, y) ((x) > (y)) ? (y) : (x)
@@ -46,25 +48,22 @@ void UI::Manager::Draw(UI::Widget &w, int ox, int oy)
 
     int extra_x = 0, extra_y = 0;
     // Draw in REVERSE order
-    for (int i = MAX_CHILD_WIDGETS - 1; i >= 0; i--)
+    for (int i = (int)w.children.size() - 1; i >= 0; i--)
     {
-        if (w.children[i])
+        auto &child = *w.children[i];
+        // Flex effects only affects widgets that use the flex system
+        if (child.flex != UI::Widget::Flex::NONE)
         {
-            auto &child = *w.children[i];
-            // Flex effects only affects widgets that use the flex system
-            if (child.flex != UI::Widget::Flex::NONE)
-            {
-                this->Draw(child, w.ox + w.padding_left + extra_x,
-                           w.oy + w.padding_top + extra_y);
-                if (child.flex == UI::Widget::Flex::ROW)
-                    extra_x += child.width;
-                else if (child.flex == UI::Widget::Flex::COLUMN)
-                    extra_y += child.height;
-            }
-            else
-                this->Draw(child, w.ox + w.padding_left,
-                           w.oy + w.padding_top);
+            this->Draw(child, w.ox + w.padding_left + extra_x,
+                        w.oy + w.padding_top + extra_y);
+            if (child.flex == UI::Widget::Flex::ROW)
+                extra_x += child.width;
+            else if (child.flex == UI::Widget::Flex::COLUMN)
+                extra_y += child.height;
         }
+        else
+            this->Draw(child, w.ox + w.padding_left,
+                        w.oy + w.padding_top);
     }
 }
 
@@ -73,10 +72,9 @@ void UI::Manager::CheckRedraw(UI::Widget &, int, int)
 #if 0
     w.ox = w.x + ox;
     w.oy = w.y + oy;
-    for (size_t i = 0; i < MAX_CHILD_WIDGETS; i++)
-        if (w.children[i])
-            this->CheckRedraw(*w.children[i], w.ox + w.padding_left,
-                              w.oy + w.padding_top);
+    for (size_t i = 0; i < w.children.size(); i++)
+        this->CheckRedraw(*w.children[i], w.ox + w.padding_left,
+                            w.oy + w.padding_top);
     
     // Redraw widget iff inside the drawn-over boundary box
     if (this->drawn_x2 >= w.ox && this->drawn_x1 <= w.ox + w.width
@@ -90,7 +88,7 @@ void UI::Manager::CheckUpdate(UI::Widget &w, unsigned mx, unsigned my, bool left
     w.inputted = false;
     if (w.OnUpdate)
         w.OnUpdate(w);
-    
+
     if (this->drag_widget == &w) // Drag widget around
     {
         if (!left) // Stop drag
@@ -124,15 +122,11 @@ void UI::Manager::CheckUpdate(UI::Widget &w, unsigned mx, unsigned my, bool left
     if (static_cast<signed short>(mx) >= w.ox && static_cast<signed short>(mx) <= w.ox + static_cast<signed short>(w.width) && static_cast<signed short>(my) >= w.oy && static_cast<signed short>(my) <= w.oy + static_cast<signed short>(w.height))
     {
         // Evaluate children iff we're hovering over
-        for (size_t i = 0; i < MAX_CHILD_WIDGETS; i++)
+        for (auto& child : w.children)
         {
-            if (w.children[i])
-            {
-                auto &child = *w.children[i];
-                this->CheckUpdate(child, mx, my, left, right, ch);
-                if (child.clicked)
-                    return;
-            }
+            this->CheckUpdate(*child, mx, my, left, right, ch);
+            if (child->clicked)
+                return;
         }
 
         // Input is only evaluated iff needed and we return immediately
@@ -153,7 +147,7 @@ void UI::Manager::CheckUpdate(UI::Widget &w, unsigned mx, unsigned my, bool left
                 {
                     if (w.parent->children[0] != this->drag_widget)
                     {
-                        for (size_t i = 1; i < MAX_CHILD_WIDGETS; i++)
+                        for (size_t i = 1; i < w.parent->children.size(); i++)
                         {
                             if (w.parent->children[i] == this->drag_widget)
                             {
@@ -207,12 +201,13 @@ void UI::Manager::CheckUpdate(UI::Widget &w, unsigned mx, unsigned my, bool left
     else
     {
         // Recursively set the tooltip status for all children to false
-        const auto setTooltipFalse = [](auto& w) -> void {
-            auto setTooltipFalse_impl = [](auto& w, const auto& func) -> void {
+        const auto setTooltipFalse = [](auto &w) -> void
+        {
+            auto setTooltipFalse_impl = [](auto &w, const auto &func) -> void
+            {
                 w.tooltipHovered = false;
-                for (size_t i = 0; i < MAX_CHILD_WIDGETS; i++)
-                    if (w.children[i])
-                        func(*w.children[i], func);
+                for (auto& child : w.children)
+                    func(*child, func);
             };
             setTooltipFalse_impl(w, setTooltipFalse_impl);
         };
@@ -235,10 +230,12 @@ UI::Widget::Widget()
 
 UI::Widget::~Widget()
 {
-    if (this->parent) {
-        for (size_t i = 0; i < MAX_CHILD_WIDGETS; i++)
-            if (this->parent->children[i] == this)
-                this->parent->children[i] = nullptr;
+    if (this->parent)
+    {
+        auto it = std::find(std::begin(this->parent->children), std::end(this->parent->children), this);
+        if (it != std::end(this->parent->children))
+            this->parent->children.erase(it);
+        
         // TODO: Assert we need redraw at all
         this->parent->Redraw();
     }
@@ -261,31 +258,25 @@ const char *UI::Widget::GetText() const
     return this->text == nullptr ? "" : this->text;
 }
 
-void UI::Widget::SetTooltipText(const char* text) {
+void UI::Widget::SetTooltipText(const char *text)
+{
     this->tooltipText = text; // No redraw required
 }
 
-void UI::Widget::SetTooltipText(const char32_t* text) {
+void UI::Widget::SetTooltipText(const char32_t *text)
+{
     this->tooltipText32 = text; // No redraw required
 }
 
-const char *UI::Widget::GetTooltipText() const {
+const char *UI::Widget::GetTooltipText() const
+{
     return this->tooltipText == nullptr ? "" : this->tooltipText;
 }
 
-void UI::Widget::AddChild(UI::Widget &w)
+void UI::Widget::AddChildDirect(UI::Widget &w)
 {
-    for (size_t i = 0; i < MAX_CHILD_WIDGETS; i++)
-    {
-        if (this->children[i] == nullptr)
-        {
-            this->children[i] = &w;
-            this->n_children++;
-            w.parent = this;
-            return;
-        }
-    }
-    // Get fucked, no child added
+    this->children.push_back(&w);
+    w.parent = this;
 }
 
 void UI::Widget::DrawShadow(Color outer_color, Color inner_color, Color mid_color)
@@ -333,17 +324,15 @@ void UI::Widget::DrawShadow(Color outer_color, Color inner_color, Color mid_colo
 void UI::Widget::Redraw()
 {
     this->needs_redraw = true;
-    for (size_t i = 0; i < MAX_CHILD_WIDGETS; i++)
-        if (this->children[i])
-            this->children[i]->Redraw();
+    for (const auto& child : this->children)
+        child->Redraw();
 }
 
 void UI::Widget::SetSkeleton(bool value)
 {
     this->skeleton = value;
-    for (size_t i = 0; i < MAX_CHILD_WIDGETS; i++)
-        if (this->children[i])
-            this->children[i]->SetSkeleton(value);
+    for (const auto& child : this->children)
+        child->SetSkeleton(value);
 }
 
 void UI::Widget::MoveBy(int off_x, int off_y)
@@ -353,14 +342,14 @@ void UI::Widget::MoveBy(int off_x, int off_y)
     this->Redraw();
 }
 
-static void PerformDrawText(const auto* text, int tx, int ty, int max_x, int max_y, int& final_x, int& final_y, bool& multiline, Color color)
+static void PerformDrawText(const auto *text, int tx, int ty, int max_x, int max_y, int &final_x, int &final_y, bool &multiline, Color color)
 {
     final_y = final_x = 0;
     multiline = false;
-    
+
     int base_x = tx;
     int base_y = ty;
-    const auto* p = text;
+    const auto *p = text;
     for (size_t i = 0; p[i]; i++)
     {
         if (p[i] == '\n')
@@ -396,12 +385,12 @@ static void PerformDrawText(const auto* text, int tx, int ty, int max_x, int max
     final_y = ty + 8;
 }
 
-void UI::Widget::DrawText(const char* text, int tx, int ty, int max_x, int max_y, int& final_x, int& final_y, bool& multiline, Color color)
+void UI::Widget::DrawText(const char *text, int tx, int ty, int max_x, int max_y, int &final_x, int &final_y, bool &multiline, Color color)
 {
     PerformDrawText(text, tx, ty, max_x, max_y, final_x, final_y, multiline, color);
 }
 
-void UI::Widget::DrawText(const char32_t* text, int tx, int ty, int max_x, int max_y, int& final_x, int& final_y, bool& multiline, Color color)
+void UI::Widget::DrawText(const char32_t *text, int tx, int ty, int max_x, int max_y, int &final_x, int &final_y, bool &multiline, Color color)
 {
     PerformDrawText(text, tx, ty, max_x, max_y, final_x, final_y, multiline, color);
 }
@@ -431,11 +420,12 @@ UI::Textbox::Textbox()
 {
     this->textBuffer[0] = U'\0';
     this->bufferPos = 0;
-    this->OnInput = [](UI::Widget &w, char32_t keypress) {
-        auto& o = static_cast<UI::Textbox&>(w);
+    this->OnInput = [](UI::Widget &w, char32_t keypress)
+    {
+        auto &o = static_cast<UI::Textbox &>(w);
         if (o.bufferPos >= sizeof(o.textBuffer) - 1)
             return;
-        
+
         if (keypress == '\n' || keypress == '\r')
         {
             // Ignore
@@ -518,7 +508,15 @@ UI::Taskbar::Taskbar()
 void UI::Taskbar::Draw()
 {
     if (!this->skeleton)
-        g_KFrameBuffer.FillSquare(this->ox, this->oy, this->width, this->height, Color(0xA0A0A0));
+    {
+        const auto ratio = 256 / this->width;
+        for (size_t i = 0; i < this->width; i++)
+        {
+            const auto b = (0xFF - i * ratio) & 0xFF;
+            g_KFrameBuffer.PlotLine(this->ox, this->oy + i, this->ox + this->width, this->oy + i, Color((b << 24) | (b << 16) | (b << 8) | 0xFF));
+        }
+    }
+
     this->DrawShadow(Color(0x000000), Color(0xFFFFFF), Color(0x808080));
     this->DrawText(this->ox + 4, this->oy + 4, Color(0x000000));
 }
@@ -543,7 +541,7 @@ void UI::Window::Decorate()
     this->closeBtn->OnClick = ([](UI::Widget &w, unsigned, unsigned, bool,
                                   bool) -> void
                                { static_cast<UI::Window &>(*w.parent).isClosed = true; });
-    this->AddChild(this->closeBtn.value());
+    this->AddChildDirect(this->closeBtn.value());
 
     this->minimBtn.emplace();
     this->minimBtn->y = -16;
@@ -553,15 +551,16 @@ void UI::Window::Decorate()
     this->minimBtn->OnClick = ([](UI::Widget &w, unsigned, unsigned, bool,
                                   bool) -> void
                                { static_cast<UI::Window &>(*w.parent).isClosed = true; });
-    this->AddChild(this->minimBtn.value());
+    this->AddChildDirect(this->minimBtn.value());
 }
 
 void UI::Window::Draw()
 {
     if (!this->skeleton)
         g_KFrameBuffer.FillSquare(this->ox, this->oy, this->width, this->height, Color(0xA0A0A0));
-    
-    for (size_t i = 0; i < 12; i++) {
+
+    for (size_t i = 0; i < 12; i++)
+    {
         const auto b = (0xFF - i * 19) & 0xFF;
         g_KFrameBuffer.PlotLine(this->ox + 1, this->oy + 1 + i, this->ox + this->width - 1, this->oy + 1 + i, Color((b << 24) | (b << 16) | (b << 8) | 0xFF));
     }
@@ -597,13 +596,13 @@ UI::Terminal::Terminal()
     this->padding_top = 4;
     this->padding_left = 4;
     // Update accordingly if the terminal has updated
-    this->OnUpdate = ([](UI::Widget& w) {
+    this->OnUpdate = ([](UI::Widget &w)
+                      {
         auto& o = static_cast<UI::Terminal&>(w);
         if(o.term.modified) {
             o.Redraw();
             o.term.modified = false;
-        }
-    });
+        } });
 }
 
 void UI::Terminal::Draw()
@@ -627,7 +626,9 @@ UI::DesktopIcon::DesktopIcon()
 
 void UI::DesktopIcon::Draw()
 {
-
+    if (!this->skeleton)
+        g_KFrameBuffer.FillSquare(this->ox, this->oy, this->width, this->height, Color(0x000000));
+    this->DrawText(this->ox + 4, this->oy + this->height - 12, Color(0xFFFFFF));
 }
 
 UI::Desktop::Desktop()
@@ -653,10 +654,25 @@ void UI::Desktop::Draw()
             for (size_t j = 0; j < this->height; j++)
                 g_KFrameBuffer.PlotPixel(i, j, Color(this->primaryColor.rgba + i + j));
         break;
-    case Background::MULTIPLY_OFFSET:
+    case Background::MULTIPLY_GRAPH:
         for (size_t i = 0; i < this->width; i++)
             for (size_t j = 0; j < this->height; j++)
                 g_KFrameBuffer.PlotPixel(i, j, Color(this->primaryColor.rgba + i * j));
+        break;
+    case Background::XOR_GRAPH:
+        for (size_t i = 0; i < this->width; i++)
+            for (size_t j = 0; j < this->height; j++)
+                g_KFrameBuffer.PlotPixel(i, j, Color(this->primaryColor.rgba + (i ^ j)));
+        break;
+    case Background::AND_GRAPH:
+        for (size_t i = 0; i < this->width; i++)
+            for (size_t j = 0; j < this->height; j++)
+                g_KFrameBuffer.PlotPixel(i, j, Color(this->primaryColor.rgba + (i & j)));
+        break;
+    case Background::OR_GRAPH:
+        for (size_t i = 0; i < this->width; i++)
+            for (size_t j = 0; j < this->height; j++)
+                g_KFrameBuffer.PlotPixel(i, j, Color(this->primaryColor.rgba + (i | j)));
         break;
     }
 }

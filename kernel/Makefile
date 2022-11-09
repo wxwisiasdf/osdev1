@@ -51,14 +51,15 @@ KERNEL_CXX_SRCS += \
 	atapi.cxx \
 	iso9660.cxx \
 	string.cxx \
-	audio.cxx
+	audio.cxx \
+	vfs.cxx
 
 KERNEL_ASM_SRCS := \
-	boot.S \
+	crt0.S \
 	handlers.S \
 	dosv86.S
 
-KERNEL_OBJS := $(KERNEL_CXX_SRCS:.cxx=.o) $(KERNEL_C_SRCS:.c=.o) $(KERNEL_ASM_SRCS:.asm=.o)
+KERNEL_OBJS := $(KERNEL_CXX_SRCS:.cxx=.o) $(KERNEL_C_SRCS:.c=.o) $(KERNEL_ASM_SRCS:.S=.o)
 DEPS := $(KERNEL_CXX_SRCS:.cxx=.d)
 
 all: build

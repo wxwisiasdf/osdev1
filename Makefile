@@ -11,7 +11,6 @@ export CXXFLAGS := \
 	-Wextra \
 	-m32 \
 	-march=i686 \
-	-flto \
 	-ffast-math
 
 export AS := gcc
@@ -19,10 +18,12 @@ export ASFLAGS := -m32
 
 export LD := gcc
 export LDFLAGS := \
-	-Os \
+	-O3 \
 	-m32 \
-	-flto \
 	-z max-page-size=0x1000
+
+export STRIP := strip
+export OBJCOPY := objcopy
 
 all: build
 run: newos.iso build
@@ -36,10 +37,12 @@ run: newos.iso build
 		2>qemu.txt
 
 build: newos.iso
+	$(MAKE) -C tools build
 	$(MAKE) -C kernel build
 	$(MAKE) -C apps build
 
 clean:
+	$(MAKE) -C tools clean
 	$(MAKE) -C kernel clean
 	$(MAKE) -C apps clean
 	$(RM) *.iso
@@ -50,7 +53,7 @@ clean:
 newos.iso: isodir/boot/kernel.elf
 	mkdir -p grub
 	cp grub.cfg isodir/boot/grub/grub.cfg
-	cp -r apps/*.png apps/*.o apps/*.raw isodir/
+	cp -r apps/* isodir/
 	$(RM) $@
 #	grub-file --is-x86-multiboot2 $<
 	grub-mkrescue -o $@ isodir
@@ -60,5 +63,6 @@ isodir/boot/kernel.elf: kernel/kernel.elf
 	strip --strip-unneeded $< -o $@
 
 kernel/kernel.elf:
+	$(MAKE) -C tools build
 	$(MAKE) -C kernel build
 	$(MAKE) -C apps build
