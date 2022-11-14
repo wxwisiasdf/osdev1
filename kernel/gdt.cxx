@@ -197,44 +197,51 @@ struct V86_IntContext
     uint32_t gs;     // 32
 };
 
-static const char *err_names[32] = {
-    "Divide-by-zero Error",           // 0x00
-    "Debug",                          // 0x01
-    "Non-maskable Interrupt",         // 0x02
-    "Breakpoint",                     // 0x03
-    "Overflow",                       // 0x04
-    "Bound Range Exceeded",           // 0x05
-    "Invalid Opcode",                 // 0x06
-    "Device Not Available",           // 0x07
-    "Double Fault",                   // 0x08
-    "Coprocessor Segment Overrun",    // 0x09
-    "Invalid TSS",                    // 0x0A
-    "Segment Not Present",            // 0x0B
-    "Stack-Segment Fault",            // 0x0C
-    "General Protection Fault",       // 0x0D
-    "Page Fault",                     // 0x0E
-    "Reserved",                       // 0x0F
-    "x87 Floating-Point Exception",   // 0x10
-    "Alignment Check",                // 0x11
-    "Machine Check",                  // 0x12
-    "SIMD Floating-Point Exception",  // 0x13
-    "Virtualization Exception",       // 0x14
-    "Control Protection Exception",   // 0x15
-    "Reserved",                       // 0x16
-    "Reserved",                       // 0x17
-    "Reserved",                       // 0x18
-    "Reserved",                       // 0x19
-    "Reserved",                       // 0x1A
-    "Reserved",                       // 0x1B
-    "Hypervisor Injection Exception", // 0x1C
-    "VMM Communication Exception",    // 0x1D
-    "Security Exception",             // 0x1E
-    "Reserved"                        // 0x1F
-};
-
+#include "ui.hxx"
 extern "C" void IntException_Handler(uint32_t irq, V86_IntContext &ctx)
 {
-    TTY::Print("%s CS:IP=%p:%p\n", err_names[irq % 32], ctx.cs, ctx.eip);
+    static const char *errorNames[32] = {
+        "Divide-by-zero Error",           // 0x00
+        "Debug",                          // 0x01
+        "Non-maskable Interrupt",         // 0x02
+        "Breakpoint",                     // 0x03
+        "Overflow",                       // 0x04
+        "Bound Range Exceeded",           // 0x05
+        "Invalid Opcode",                 // 0x06
+        "Device Not Available",           // 0x07
+        "Double Fault",                   // 0x08
+        "Coprocessor Segment Overrun",    // 0x09
+        "Invalid TSS",                    // 0x0A
+        "Segment Not Present",            // 0x0B
+        "Stack-Segment Fault",            // 0x0C
+        "General Protection Fault",       // 0x0D
+        "Page Fault",                     // 0x0E
+        "Reserved",                       // 0x0F
+        "x87 Floating-Point Exception",   // 0x10
+        "Alignment Check",                // 0x11
+        "Machine Check",                  // 0x12
+        "SIMD Floating-Point Exception",  // 0x13
+        "Virtualization Exception",       // 0x14
+        "Control Protection Exception",   // 0x15
+        "Reserved",                       // 0x16
+        "Reserved",                       // 0x17
+        "Reserved",                       // 0x18
+        "Reserved",                       // 0x19
+        "Reserved",                       // 0x1A
+        "Reserved",                       // 0x1B
+        "Hypervisor Injection Exception", // 0x1C
+        "VMM Communication Exception",    // 0x1D
+        "Security Exception",             // 0x1E
+        "Reserved"                        // 0x1F
+    };
+
+    if (irq != 0x08)
+    {
+        UI::Manager::Get().ErrorMsg(*"CPU Error", *errorNames[irq % 32]);
+        UI::Manager::Get().Draw(*UI::Manager::Get().GetRoot(), 0, 0);
+    }
+
+    TTY::Print("%s CS:IP=%p:%p\n", errorNames[irq % 32], ctx.cs, ctx.eip);
     ctx.cs = GDT::USER_XCODE | GDT::LDT_SEGMENT;
     ctx.ds = GDT::USER_XDATA | GDT::LDT_SEGMENT;
     ctx.ss = ctx.ds;

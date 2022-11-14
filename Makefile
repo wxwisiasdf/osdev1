@@ -1,17 +1,18 @@
-export CXX := gcc
+export CXX := g++
 export CXXFLAGS := \
-	-Werror \
 	-Wfatal-errors \
-	-O3 \
+	-O2 \
+	-g \
 	-ffreestanding \
-	-fstrict-aliasing \
-	-fomit-frame-pointer \
 	-nostdlib \
 	-Wall \
 	-Wextra \
 	-m32 \
-	-march=i686 \
-	-ffast-math
+	-march=i686
+
+#	-ffast-math \
+#	-fstrict-aliasing \
+#	-fomit-frame-pointer
 
 export AS := gcc
 export ASFLAGS := -m32

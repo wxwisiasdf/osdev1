@@ -1,11 +1,4 @@
 #include <optional>
-import pic;
-import uart;
-import pci;
-import usb;
-import ps2;
-import sb16;
-import locale;
 
 #include <cstddef>
 #include <cstdint>
@@ -24,7 +17,15 @@ import locale;
 #include "adlib.hxx"
 #include "floppy.hxx"
 #include "alloc.hxx"
-#include "vfs.hxx"
+
+import pic;
+import uart;
+import pci;
+import usb;
+import ps2;
+import sb16;
+import locale;
+import filesys;
 
 struct Regs
 {
@@ -216,8 +217,16 @@ void Kernel_Main()
     g_Desktop->y = 0;
     g_Desktop->width = g_KFrameBuffer.width;
     g_Desktop->height = g_KFrameBuffer.height;
+    UI::Manager::Get().SetRoot(*g_Desktop);
 
     HimemAlloc::Print(HimemAlloc::Manager::GetDefault());
+
+    auto& exeIcon = g_Desktop->AddChild<UI::DesktopIcon>();
+    exeIcon.x = 64;
+    exeIcon.y = 64;
+    exeIcon.width = 64;
+    exeIcon.height = 64;
+    exeIcon.SetText("Hello world");
 
     auto& taskbar = g_Desktop->AddChild<UI::Taskbar>();
     taskbar.x = 0;
@@ -286,13 +295,14 @@ void Kernel_Main()
                     for(size_t i = 0; i < 100; i++)
                         tmpbuf[i] = Locale::Convert<Locale::Charset::ASCII, Locale::Charset::NATIVE>((char)filepathTextbox->textBuffer[i]);
                     
+                    static auto* imageBase = (void *)0x1000000;
+
+                    asm("sti");
                     static size_t offset = 0;
                     auto r = isoCdrom->ReadFile(tmpbuf, [](void *data, size_t len) -> bool {
-                        TTY::Print("Reading %x bytes at %p\n", len, data);
-                        auto *dest = (uint8_t *)0x1000000 + offset;
-                        const auto *src = (const uint8_t *)data;
-                        for (size_t i = 0; i < len; i++)
-                            dest[i] = src[i];
+                        TTY::Print("Reading %x bytes at %p\n", len, (uint8_t *)imageBase + offset);
+                        std::memcpy((uint8_t *)imageBase + offset, data, len);
+                        offset += len;
                         return true;
                     });
 
@@ -309,7 +319,7 @@ void Kernel_Main()
                     }
                     else
                     {
-                        Task::Add((void (*)())0x1000000, nullptr, false);
+                        Task::Add((void (*)())imageBase, nullptr, false);
                     }
                 }, nullptr, false);
             });

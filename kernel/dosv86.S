@@ -14,6 +14,20 @@ Kernel_EnterV86:
     pushl 16(%ebp)
     iretl
 
+.global Kernel_Task16Trampoline
+Kernel_Task16Trampoline:
+    callw *%ax
+    # Halt for now
+    cli
+    hlt
+
+.global Kernel_Task32Trampoline
+Kernel_Task32Trampoline:
+    calll *%eax
+    # Halt for now
+    cli
+    hlt
+
 .global Kernel_TaskV86Stub
 Kernel_TaskV86Stub:
     pushfl

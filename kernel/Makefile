@@ -1,7 +1,7 @@
 CXXFLAGS += \
 	-Wframe-larger-than=386 \
-	-fno-threadsafe-statics \
 	-std=c++23 \
+	-fno-threadsafe-statics \
 	-fno-exceptions \
 	-fno-rtti \
 	-msoft-float \
@@ -29,7 +29,8 @@ KERNEL_CXX_SRCS := \
 	pci.cxx \
 	dma.cxx \
 	usb.cxx \
-	ubsan.cxx
+	ubsan.cxx \
+	filesys.cxx
 
 # Middle-end devices
 KERNEL_CXX_SRCS += \
@@ -51,8 +52,7 @@ KERNEL_CXX_SRCS += \
 	atapi.cxx \
 	iso9660.cxx \
 	string.cxx \
-	audio.cxx \
-	vfs.cxx
+	audio.cxx
 
 KERNEL_ASM_SRCS := \
 	crt0.S \

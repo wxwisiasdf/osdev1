@@ -89,6 +89,9 @@ Task::StackInfo &Task::GetStack()
     __builtin_unreachable();
 }
 
+extern "C" void Kernel_Task16Trampoline();
+extern "C" void Kernel_Task32Trampoline();
+
 /// @brief Adds a new task
 /// @param eip EIP to set task to
 /// @param esp ESP to set stack to
@@ -159,13 +162,13 @@ Task::TSS &Task::Add(void (*eip)(), void *esp, bool v86)
             task.local_entries.user_xdata.access.privilege = 3;
             if (!task.is_v86)
             {
-                task.prot.eax = 0;
+                task.prot.eax = (uintptr_t)eip;
                 task.prot.ebx = 0;
                 task.prot.ecx = 0;
                 task.prot.edx = 0;
                 task.prot.esi = 0;
                 task.prot.edi = 0;
-                task.prot.eip = (uintptr_t)eip;
+                task.prot.eip = (uintptr_t)Kernel_Task32Trampoline;
                 task.prot.ldtr = GDT::GetEntrySegment(ldt_entry);
                 task.prot.esp = (uintptr_t)esp;
                 task.prot.ebp = task.prot.esp;
@@ -195,13 +198,13 @@ Task::TSS &Task::Add(void (*eip)(), void *esp, bool v86)
             }
             else
             {
-                task.real.ax = 0;
+                task.real.ax = (uintptr_t)eip;
                 task.real.bx = 0;
                 task.real.cx = 0;
                 task.real.dx = 0;
                 task.real.si = 0;
                 task.real.di = 0;
-                task.real.ip = (uintptr_t)eip;
+                task.real.ip = (uintptr_t)Kernel_Task16Trampoline;
                 task.real.ldtr = GDT::GetEntrySegment(ldt_entry);
                 task.real.sp = (uintptr_t)esp;
                 task.real.bp = task.real.sp;

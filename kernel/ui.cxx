@@ -224,6 +224,35 @@ void UI::Manager::Update()
     this->drawn_y2 = 0xffff;
 }
 
+void UI::Manager::SetRoot(UI::Widget& w)
+{
+    this->rootWidget = &w;
+}
+
+UI::Widget* UI::Manager::GetRoot()
+{
+    return this->rootWidget;
+}
+
+void UI::Manager::ErrorMsg(const char& title, const char& msg)
+{
+    if (this->rootWidget)
+    {
+        auto& errorWin = this->rootWidget->AddChild<UI::Window>();
+        errorWin.SetText(&title);
+        errorWin.x = errorWin.y = 0;
+        errorWin.width = 150;
+        errorWin.height = 48;
+        errorWin.Decorate();
+
+        auto& errorTxt = errorWin.AddChild<UI::Textbox>();
+        errorTxt.x = errorTxt.y = 0;
+        errorTxt.width = errorWin.width - 16;
+        errorTxt.height = errorWin.height - 16;
+        errorTxt.SetText(&msg);
+    }
+}
+
 UI::Widget::Widget()
 {
 }

@@ -36,7 +36,7 @@ ksyms.ld: ../kernel/kernel.elf ../tools/elf2ld
 	../tools/elf2ld $< >>$@
 	echo "SECTIONS {" >>$@
 	echo ". = 16M;" >>$@
-	echo "	.text : ALIGN(4K) { *(.text .text.*); }" >>$@
+	echo "	.text : ALIGN(4K) { *(.text.startup); *(.text .text.*); }" >>$@
 	echo "	.rodata : ALIGN(4K) { *(.rodata .rodata.*); }" >>$@
 	echo "	.data : ALIGN(4K) { *(.data .data.*); }" >>$@
 	echo "	.bss : ALIGN(4K) { *(COMMON); *(.bss .bss.*); }" >>$@

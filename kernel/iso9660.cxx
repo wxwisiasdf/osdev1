@@ -33,10 +33,7 @@ std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEnt
         {
             const auto& entry = *std::launder(reinterpret_cast<const ISO9660::DirectoryEntry*>(p));
             if (!entry.length)
-            {
-                TTY::Print("iso9660: End of table\n");
-                return std::optional<DirectorySummaryEntry>{};
-            }
+                break;
 
             char tmpbuf[entry.MAX_UNIQUE_NAME + 1] = {};
             for (size_t i = 0; i < entry.file_ident_len && i < sizeof(tmpbuf); i++)
@@ -70,23 +67,26 @@ std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEnt
 bool ISO9660::Device::ReadFile(const char *name, bool (*func)(void *data, size_t len))
 {
     auto dirEntry = this->GetDirEntryLBA(name);
-    if (!dirEntry.has_value())
+    if (dirEntry.has_value())
     {
-        TTY::Print("iso9660: File %s not found\n", name);
-        return false;
-    }
+        TTY::Print("iso9660: File %s len=%x, lba=%x\n", name, dirEntry->length, dirEntry->lba);
+        auto totalLength = static_cast<signed long>(dirEntry->length);
+        auto currLBA = dirEntry->lba;
+        while (totalLength > 0)
+        {
+            const auto len = this->dev.Read(currLBA, this->block_buffer, sizeof(this->block_buffer));
+            if (!len)
+                return false;
+            if (!func(this->block_buffer, len))
+                return true;
 
-    TTY::Print("iso9660: File %s len=%x, lba=%x\n", name, dirEntry->length, dirEntry->lba);
-    while (dirEntry->length)
-    {
-        auto len = sizeof(this->block_buffer);
-        if (!this->dev.Read(dirEntry->lba, (uint8_t *)&this->block_buffer, len))
-            return false;
-        if (!func(this->block_buffer, len))
-            return true;
-        
-        dirEntry->length -= len;
-        dirEntry->lba++;
+            TTY::Print("iso9660: File %s len=%i, lba=%x\n", name, totalLength, currLBA);
+            
+            totalLength -= len;
+            currLBA++;
+        }
+        return true;
     }
-    return true;
+    TTY::Print("iso9660: File %s not found\n", name);
+    return false;
 }

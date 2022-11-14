@@ -20,6 +20,7 @@ namespace UI
         // Box of area drawn over
         int drawn_x1 = 0, drawn_y1 = 0, drawn_x2 = 0, drawn_y2 = 0;
         size_t drawn_z_level = 0; // Z-level drawn (lower is higher)
+        UI::Widget *rootWidget = nullptr;
     public:
         Manager() = delete;
         Manager(Framebuffer &fb);
@@ -33,6 +34,9 @@ namespace UI
         void CheckRedraw(UI::Widget &w, int ox, int oy);
         void CheckUpdate(UI::Widget &w, unsigned mx, unsigned my, bool left, bool right, char32_t keypress);
         void Update();
+        void SetRoot(UI::Widget& w);
+        UI::Widget* GetRoot();
+        void ErrorMsg(const char& title, const char& msg);
     };
 
     class Widget
