@@ -23,7 +23,6 @@ import uart;
 import pci;
 import usb;
 import ps2;
-import sb16;
 import locale;
 import filesys;
 
@@ -206,8 +205,6 @@ void Kernel_Main()
     // Audio
     static std::optional<AdLib::Device> adlibDevice;
     adlibDevice.emplace();
-    static std::optional<SoundBlaster16> sb16;
-    sb16.emplace(0x20, 2, SoundBlaster16::TransferMode::PLAYSOUND, SoundBlaster16::PCMMode::PCM_8);
 
     // Storage
     static std::optional<Floppy::Driver> floppyDriver;
@@ -321,6 +318,8 @@ void Kernel_Main()
             });
             runWin.AddChildDirect(filepathTextbox.value());
 
+            static Task::TSS* runTask = nullptr;
+            static bool performRunTask = false;
             auto& runBtn = runWin.AddChild<UI::Button>();
             runBtn.x = 0;
             runBtn.y = 16;
@@ -328,7 +327,12 @@ void Kernel_Main()
             runBtn.height = 12;
             runBtn.SetText("Run");
             runBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-                Task::Add([]() -> void  {
+                if(runTask != nullptr)
+                {
+                    performRunTask = true;
+                }
+                runTask = Task::Add([]() -> void  {
+                doRunTask:
                     static char tmpbuf[100];
                     for(size_t i = 0; i < 100; i++)
                         tmpbuf[i] = Locale::Convert<Locale::Charset::ASCII, Locale::Charset::NATIVE>((char)filepathTextbox->textBuffer[i]);
@@ -360,6 +364,10 @@ void Kernel_Main()
                         int r = mainFunc(nullptr);
                         //Task::Add(, nullptr, false);
                     }
+
+                    while(!performRunTask)
+                        ;
+                    goto doRunTask;
                 }, nullptr, false);
             });
         });

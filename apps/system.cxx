@@ -39,5 +39,6 @@ int UDOS_32Main(char32_t[])
 
     while (!systemWin.isClosed)
         Task::Switch();
+    systemWin.Kill();
     return 0;
 }

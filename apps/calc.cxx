@@ -5,57 +5,49 @@
 #include <kernel/ui.hxx>
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
+#include <kernel/alloc.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
 int UDOS_32Main(char32_t[])
 {
-    static std::optional<UI::Window> calcWindow;
-    calcWindow.emplace();
-    calcWindow->x = 0;
-    calcWindow->y = 0;
-    calcWindow->width = 80;
-    calcWindow->height = 128;
-    calcWindow->SetText("Calculator");
-    g_Desktop->AddChildDirect(calcWindow.value());
+    auto& calcWindow = g_Desktop->AddChild<UI::Window>();
+    calcWindow.x = 0;
+    calcWindow.y = 0;
+    calcWindow.width = 80;
+    calcWindow.height = 128;
+    calcWindow.SetText("Calculator");
 
-    static std::optional<UI::Button> numBtns[10];
     static const char *digitList[] = {
         "7", "8", "9",
         "4", "5", "6",
         "1", "2", "3",
         "0",
     };
-
     for (size_t i = 0; i < 9; i++)
     {
-        numBtns[i].emplace();
-        numBtns[i]->x = (i == 0 ? 0 : i % 3) * 16;
-        numBtns[i]->y = (i == 0 ? 0 : i / 3) * 16;
-        numBtns[i]->width = 12;
-        numBtns[i]->height = 12;
-        numBtns[i]->SetText(digitList[i]);
-        calcWindow->AddChildDirect(numBtns[i].value());
+        auto& numBtn = calcWindow.AddChild<UI::Button>();
+        numBtn.x = (i == 0 ? 0 : i % 3) * 16;
+        numBtn.y = (i == 0 ? 0 : i / 3) * 16;
+        numBtn.width = 12;
+        numBtn.height = 12;
+        numBtn.SetText(digitList[i]);
     }
 
-    static std::optional<UI::Button> eqBtn;
-    eqBtn.emplace();
-    eqBtn->x = 16 * 3;
-    eqBtn->y = 16;
-    eqBtn->width = 12;
-    eqBtn->height = 12 + 16;
-    eqBtn->SetText("=");
-    calcWindow->AddChildDirect(eqBtn.value());
+    auto& eqBtn = calcWindow.AddChild<UI::Button>();
+    eqBtn.x = 16 * 3;
+    eqBtn.y = 16;
+    eqBtn.width = 12;
+    eqBtn.height = 12 + 16;
+    eqBtn.SetText("=");
 
-    static std::optional<UI::Button> minusBtn;
-    minusBtn.emplace();
-    minusBtn->x = 16 * 3;
-    minusBtn->y = 0;
-    minusBtn->width = 12;
-    minusBtn->height = 12;
-    minusBtn->SetText("-");
-    calcWindow->AddChildDirect(minusBtn.value());
-
-    while (!calcWindow->isClosed)
+    auto& minusBtn = calcWindow.AddChild<UI::Button>();
+    minusBtn.x = 16 * 3;
+    minusBtn.y = 0;
+    minusBtn.width = 12;
+    minusBtn.height = 12;
+    minusBtn.SetText("-");
+    while (!calcWindow.isClosed)
         Task::Switch();
+    calcWindow.Kill();
     return 0;
 }

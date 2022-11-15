@@ -53,11 +53,6 @@ namespace JDAPLUS
     };
 }
 
-int main() {
-    TTY::Print("Hello world");
-    return 0;
-}
-
 #if 0
 class MainWindow
     members

@@ -19,7 +19,16 @@ LDFLAGS += \
 	-nostdlib \
 	-static-libgcc
 
-PROGRAMS := hello.exe calc.exe mplay.exe run.exe tour.exe system.exe
+PROGRAMS := \
+	hello.exe \
+	calc.exe \
+	mplay.exe \
+	run.exe \
+	tour.exe \
+	system.exe \
+	go.exe \
+	julgonu.exe \
+	console.exe
 DEPS := $(PROGRAMS:.exe=.d)
 
 all: build

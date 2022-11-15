@@ -74,6 +74,10 @@ public:
     Widget &operator=(const Widget &) = delete;
     virtual ~Widget();
 
+    void Kill()
+    {
+        delete this;
+    }
     void SetText(const char *text);
     void SetText(const char32_t *text);
     const char *GetText() const;
