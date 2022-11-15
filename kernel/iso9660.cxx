@@ -11,11 +11,11 @@ ISO9660::Device::Device(ATAPI::Device &_dev)
 }
 
 std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEntryLBA(const char *name)
-{   
+{
     if (!this->dev.Read(0x10, (uint8_t *)&this->pvd, sizeof(this->pvd)))
     {
         TTY::Print("iso9660: Unable to read pvd?\n");
-        return std::optional<DirectorySummaryEntry>{};
+        return std::optional<DirectorySummaryEntry> {};
     }
     TTY::Print("iso9660: Version %u, code %u, LBA L-type %u, opt %u\n", this->pvd.version, this->pvd.code, this->pvd.type_l_path_lba, this->pvd.opt_type_l_path_lba);
 
@@ -25,7 +25,7 @@ std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEnt
     {
         auto readLen = this->dev.Read(currLBA, this->block_buffer, sizeof(this->block_buffer));
         if (!readLen)
-            return std::optional<DirectorySummaryEntry>{};
+            return std::optional<DirectorySummaryEntry> {};
 
         TTY::Print("iso9660: Read length %x\n", readLen);
         const auto *p = this->block_buffer;
@@ -44,14 +44,14 @@ std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEnt
             if (entry.length < len)
             {
                 TTY::Print("iso9660: Entry size is corrupt length=%x, ident_len=%x\n", entry.length, entry.file_ident_len);
-                return std::optional<DirectorySummaryEntry>{};
+                return std::optional<DirectorySummaryEntry> {};
             }
             else
             {
                 len = entry.length;
                 if (entry.file_ident_len == std::strlen(name) && !std::memcmp(name, tmpbuf, entry.file_ident_len))
                 {
-                    auto opt = std::optional<DirectorySummaryEntry>{};
+                    auto opt = std::optional<DirectorySummaryEntry> {};
                     return opt.emplace(entry.extent_lba.lsb, entry.data_len.lsb);
                 }
             }
@@ -61,7 +61,7 @@ std::optional<ISO9660::Device::DirectorySummaryEntry> ISO9660::Device::GetDirEnt
                 p++;
         }
     }
-    return std::optional<DirectorySummaryEntry>{};
+    return std::optional<DirectorySummaryEntry> {};
 }
 
 bool ISO9660::Device::ReadFile(const char *name, bool (*func)(void *data, size_t len))
@@ -69,7 +69,7 @@ bool ISO9660::Device::ReadFile(const char *name, bool (*func)(void *data, size_t
     auto dirEntry = this->GetDirEntryLBA(name);
     if (dirEntry.has_value())
     {
-        TTY::Print("iso9660: File %s len=%x, lba=%x\n", name, dirEntry->length, dirEntry->lba);
+        TTY::Print("iso9660: File %s len=0x%x, lba=%x\n", name, dirEntry->length, dirEntry->lba);
         auto totalLength = static_cast<signed long>(dirEntry->length);
         auto currLBA = dirEntry->lba;
         while (totalLength > 0)
@@ -80,8 +80,8 @@ bool ISO9660::Device::ReadFile(const char *name, bool (*func)(void *data, size_t
             if (!func(this->block_buffer, len))
                 return true;
 
-            TTY::Print("iso9660: File %s len=%i, lba=%x\n", name, totalLength, currLBA);
-            
+            TTY::Print("iso9660: File %s len=0x%x, lba=0x%x\n", name, totalLength, currLBA);
+
             totalLength -= len;
             currLBA++;
         }

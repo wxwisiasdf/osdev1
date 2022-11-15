@@ -13,29 +13,30 @@
 
 namespace ATAPI
 {
-    /// @brief An ATAPI device, note that this is a bus manager so
-    /// it will be able to manage multiple drives on a single bus
-    struct Device
+/// @brief An ATAPI device, note that this is a bus manager so
+/// it will be able to manage multiple drives on a single bus
+struct Device
+{
+    enum Bus
     {
-        enum Bus
-        {
-            PRIMARY = 0x1F0,
-            SECONDARY = 0x170,
-        } bus;
-        enum Drive
-        {
-            MASTER = 0xA0,
-            SLAVE = 0xB0,
-        } drive;
-        Device() = default;
-        Device(Bus _bus);
-        ~Device() = default;
+        PRIMARY = 0x1F0,
+        SECONDARY = 0x170,
+    } bus;
+    enum Drive
+    {
+        NONE,
+        MASTER = 0xA0,
+        SLAVE = 0xB0,
+    } drive;
+    Device() = default;
+    Device(Bus _bus);
+    ~Device() = default;
 
-        bool IsPresent();
-        bool SendCommand(uint8_t *cmd, size_t size);
-        void SelectDrive(Drive _drive);
-        int Read(uint32_t lba, uint8_t *buffer, size_t size);
-    };
+    bool IsPresent();
+    bool SendCommand(uint8_t *cmd, size_t size);
+    void SelectDrive(Drive _drive);
+    int Read(uint32_t lba, uint8_t *buffer, size_t size);
+};
 }
 
 #endif

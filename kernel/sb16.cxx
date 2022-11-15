@@ -13,7 +13,8 @@ export module sb16;
 
 
 // Soundblaster IRQ table
-static const unsigned char irqToNumber[4][2] = {
+static const unsigned char irqToNumber[4][2] =
+{
     { 0x01, 2 }, // Jumper value - IRQ
     { 0x02, 5 },
     { 0x04, 7 },
@@ -22,12 +23,14 @@ static const unsigned char irqToNumber[4][2] = {
 
 export struct SoundBlaster16 : public Audio::Driver
 {
-    enum ChannelMode {
+    enum ChannelMode
+    {
         SINGLE = 0x48,
         AUTO = 0x58,
     };
-    
-    enum TransferMode {
+
+    enum TransferMode
+    {
         PLAYSOUND = 0x00,
         RECORDSOUND = 0x01,
     };
@@ -35,7 +38,8 @@ private:
     void InitChannel(int channel, ChannelMode chanMode);
     void WriteDSP(uint8_t value)
     {
-        IO_TimeoutWait(100, [this]() -> bool {
+        IO_TimeoutWait(100, [this]() -> bool
+        {
             return IO_In8(0x20E + this->base) & 0x80;
         });
         IO_Out8(0x20C + this->base, value);
@@ -61,7 +65,8 @@ private:
         this->WriteDSP((len >> 8) - 1);
     }
 public:
-    enum PCMMode {
+    enum PCMMode
+    {
         PCM_8 = 0xC0, // 8-bits PCM
         PCM_16 = 0xB0, // 16-bits PCM
     } mode = PCM_8; // Current mode of the soundcard
@@ -74,7 +79,8 @@ public:
     SoundBlaster16() = default;
     SoundBlaster16(int _base, int, TransferMode inout, PCMMode _mode)
         : mode{ _mode },
-        base{ _base }
+          base{ _base },
+          sampleRate{ 44100 }
     {
         this->singleton = this;
 
@@ -83,16 +89,17 @@ public:
         // Wait 3ms
         for (size_t i = 0; i < 30000; i++)
             ;
-        
+
         // Do last DSP reset
         IO_Out8(0x206 + this->base, 0);
-        IO_TimeoutWait(3000, [this]() -> bool {
+        IO_TimeoutWait(3000, [this]() -> bool
+        {
             return IO_In8(0x20E + this->base) & 0x80;
         });
         // Read final 0xAA code
         if (IO_In8(0x20A + this->base) != 0xAA)
             return;
-        
+
         // Obtain Soundblaster DSP version
         this->WriteDSP(0xE1);
         this->dsp_version = IO_In8(0x20A + this->base) << 8;
@@ -164,7 +171,7 @@ public:
             this->FillBuffer(buffer, this->sampleRate);
     }
 
-    void (*FillBuffer)(void *buffer, size_t len);
+    void (*FillBuffer)(void *buffer, size_t len) = nullptr;
 };
 SoundBlaster16* SoundBlaster16::singleton = nullptr;
 

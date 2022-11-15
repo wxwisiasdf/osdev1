@@ -13,7 +13,8 @@ static HimemAlloc::Manager g_KMMaster;
 
 extern unsigned char lowMem[MAX_MEM_LOW];
 
-unsigned char lowBitmap[(MAX_MEM_LOW / LOW_ALLOC_SIZE) / 8] = {
+unsigned char lowBitmap[(MAX_MEM_LOW / LOW_ALLOC_SIZE) / 8] =
+{
     0xF0, // 4, 512 byte paragraphs
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -59,8 +60,8 @@ void Alloc::AddUsedBlock(uintptr_t addr, size_t n_para)
             block->addr_hi = addr >> 16;
             block->n_para = n_para;
             for (size_t j = addr / LOW_ALLOC_SIZE;
-                 j < (addr / LOW_ALLOC_SIZE) + n_para;
-                 j++)
+                    j < (addr / LOW_ALLOC_SIZE) + n_para;
+                    j++)
                 Alloc::SetBitmap(lowBitmap, j, true);
             return;
         }
@@ -125,8 +126,8 @@ void Alloc::FreeLow(void *addr)
         if (linear_addr == (uintptr_t)addr)
         {
             for (size_t j = linear_addr / LOW_ALLOC_SIZE;
-                 j < (linear_addr / LOW_ALLOC_SIZE) + block->n_para;
-                 j++)
+                    j < (linear_addr / LOW_ALLOC_SIZE) + block->n_para;
+                    j++)
                 Alloc::SetBitmap(lowBitmap, j, false);
             return;
         }
@@ -327,7 +328,7 @@ void *HimemAlloc::AlignAlloc(HimemAlloc::Manager &master, size_t size, size_t al
         auto &region = master.regions[i];
         if (region.addr == nullptr || region.free_size < size)
             continue;
-        
+
         auto *block = region.head;
         char *bptr = region.addr;
         while (block != nullptr)
@@ -536,7 +537,7 @@ HimemAlloc::Info HimemAlloc::GetInfo(const HimemAlloc::Manager& master)
         const auto& region = master.regions[i];
         if (region.addr == nullptr)
             continue;
-        
+
         auto *block = region.head;
         while (block != nullptr)
         {
@@ -559,7 +560,7 @@ void HimemAlloc::Print(const HimemAlloc::Manager& master)
             continue;
 
         TTY::Print("Region#%u, size %u, maxBlocks %u, free %u, totalSize %u\n", i, region.size, region.max_blocks, region.free_size, region.size);
-        
+
         auto *block = region.head;
         while (block != nullptr)
         {
@@ -589,7 +590,7 @@ void HimemAlloc::Print(const HimemAlloc::Manager& master)
 {
     return HimemAlloc::AlignAlloc(g_KMMaster, size, static_cast<size_t>(alignment));
 }
- 
+
 void  operator delete(void* ptr) noexcept
 {
     HimemAlloc::Free(g_KMMaster, ptr);
@@ -620,7 +621,7 @@ void  operator delete(void* ptr, std::align_val_t,
 {
     HimemAlloc::Free(g_KMMaster, ptr);
 }
- 
+
 [[nodiscard]] void* operator new[](std::size_t size)
 {
     return HimemAlloc::Alloc(g_KMMaster, size);
@@ -641,7 +642,7 @@ void  operator delete(void* ptr, std::align_val_t,
 {
     return HimemAlloc::AlignAlloc(g_KMMaster, size, static_cast<size_t>(alignment));
 }
- 
+
 void  operator delete[](void* ptr) noexcept
 {
     HimemAlloc::Free(g_KMMaster, ptr);

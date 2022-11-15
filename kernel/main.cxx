@@ -102,8 +102,14 @@ extern uint8_t text_start, text_end;
 extern uint8_t rodata_start, rodata_end;
 extern uint8_t data_start, data_end;
 
+static bool kernelInitLock = false;
 extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
 {
+    if(kernelInitLock)
+        while(1)
+            Task::Switch();
+    kernelInitLock = true;
+
     UART::com[0].emplace(0x3F8); // Initialize COM1
 
     static std::optional<TTY::Terminal> comTerm;
@@ -113,14 +119,15 @@ extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
     TTY::Print("Numbers %i,%u!!!\n", 69, 420);
 
     HimemAlloc::InitManager(HimemAlloc::Manager::GetDefault());
-    HimemAlloc::AddRegion(HimemAlloc::Manager::GetDefault(), (void *)0x1000000, 65536 * 4);
+    static uint8_t memHeap[65536 * 8];
+    HimemAlloc::AddRegion(HimemAlloc::Manager::GetDefault(), (void *)memHeap, sizeof(memHeap) - 1);
 
     if (magic != MULTIBOOT2_BOOTLOADER_MAGIC)
         return;
 
     for (auto *tag = (multiboot_tag *)(addr + 8);
-         tag->type != MULTIBOOT_TAG_TYPE_END;
-         tag = reinterpret_cast<decltype(tag)>((multiboot_uint8_t *)tag + ((tag->size + 7) & ~7)))
+            tag->type != MULTIBOOT_TAG_TYPE_END;
+            tag = reinterpret_cast<decltype(tag)>((multiboot_uint8_t *)tag + ((tag->size + 7) & ~7)))
     {
         switch (tag->type)
         {
@@ -148,9 +155,31 @@ extern "C" uint8_t Kernel_V86StackTop;
 
 std::optional<UI::Desktop> g_Desktop;
 
+#if 0
+static inline std::vector<std::string> SplitStrings(const std::string& s, char seperator)
+{
+    std::vector<std::string> output;
+    std::string::size_type prev_pos = 0, pos = 0;
+    while((pos = s.find(seperator, pos)) != std::string::npos)
+    {
+        std::string substring(s.substr(prev_pos, pos-prev_pos));
+        output.push_back(substring);
+        prev_pos = ++pos;
+    }
+    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+    return output;
+}
+#endif
+
 // Main event handler, for keyboard and mouse
+static bool kernelMainLock = false;
 void Kernel_Main()
 {
+    if(kernelMainLock)
+        while(1)
+            Task::Switch();
+    kernelMainLock = true;
+
     // Sometimes kernel_main gets executed twice
     Task::DisableSwitch();
     PIC::Get().Remap(0xE8, 0xF0);
@@ -159,7 +188,8 @@ void Kernel_Main()
 
     // Controllers
     static std::optional<EHCI::Device> usbDevice;
-    usbDevice.emplace(PCI::Device{
+    usbDevice.emplace(PCI::Device
+    {
         .bus = 0,
         .slot = 4,
         .func = 0,
@@ -189,27 +219,35 @@ void Kernel_Main()
 
     static std::optional<ISO9660::Device> isoCdrom;
     isoCdrom.emplace(atapiDevices[1].value());
-    static size_t offset = 0, padding = 0;
-    isoCdrom->ReadFile("_bg.raw;1", [](void *data, size_t len) -> bool {
-        TTY::Print("Reading %x bytes at %p\n", len, data);
-        for (size_t i = 0; i < len / 3; i++)
-        {
-            const auto x = ((i + offset) == 0) ? 0 : (i + offset) % g_KFrameBuffer.width;
-            const auto y = ((i + offset) == 0) ? 0 : (i + offset) / g_KFrameBuffer.width;
-            const auto *p = reinterpret_cast<uint8_t *>(data);
 
-            const auto r = p[i * 3 + 0 + padding] << 24;
-            const auto g = p[i * 3 + 1 + padding] << 16;
-            const auto b = p[i * 3 + 2 + padding] << 8;
-
-            g_KFrameBuffer.PlotPixel(x, y, Color(r | g | b));
-        }
-        padding = 3 - len % 3;
-        offset += len / 3;
-        if (offset && offset / g_KFrameBuffer.width >= 180)
-            return false;
+#if 0
+    static char *menuCfgData = nullptr;
+    static size_t menuCfgSize = 0;
+    auto r = isoCdrom->ReadFile("menu.cfg;1", [](void *data, size_t len) -> bool
+    {
+        TTY::Print("Taskbar config: %s\n", data);
+        menuCfgData = (char *)HimemAlloc::Realloc(HimemAlloc::Manager::GetDefault(), menuCfgData, menuCfgSize + len);
+        std::memcpy(menuCfgData + menuCfgSize, data, len);
+        menuCfgSize += len;
         return true;
     });
+    TTY::Print("Taskbar config (%u): %s\n", menuCfgSize, menuCfgData);
+
+    const auto lines = SplitStrings(std::string{ menuCfgData }, '\n');
+    for(const auto& line : lines)
+    {
+        const auto data = SplitStrings(line, ';');
+        if(data.size() <= 3)
+        {
+            TTY::Print("Menu config has malformed entry %s\n", line.c_str());
+            continue;
+        }
+
+        const auto& name = data[0];
+        const auto& desc = data[1];
+        const auto& filename = data[2];
+    }
+#endif
 
     // 0x1000000;
     g_Desktop.emplace();
@@ -241,7 +279,7 @@ void Kernel_Main()
     startBtn.height = 12;
     startBtn.SetText("Start");
     startBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void
-                         {
+    {
         static std::optional<UI::Taskbar> startMenu;
         if (startMenu.has_value())
         {
@@ -294,13 +332,11 @@ void Kernel_Main()
                     static char tmpbuf[100];
                     for(size_t i = 0; i < 100; i++)
                         tmpbuf[i] = Locale::Convert<Locale::Charset::ASCII, Locale::Charset::NATIVE>((char)filepathTextbox->textBuffer[i]);
-                    
-                    static auto* imageBase = (void *)0x1000000;
 
-                    asm("sti");
+                    static auto* imageBase = (void *)0x1000000;
                     static size_t offset = 0;
                     auto r = isoCdrom->ReadFile(tmpbuf, [](void *data, size_t len) -> bool {
-                        TTY::Print("Reading %x bytes at %p\n", len, (uint8_t *)imageBase + offset);
+                        TTY::Print("Reading 0x%x bytes at %p\n", len, (uint8_t *)imageBase + offset);
                         std::memcpy((uint8_t *)imageBase + offset, data, len);
                         offset += len;
                         return true;
@@ -319,7 +355,10 @@ void Kernel_Main()
                     }
                     else
                     {
-                        Task::Add((void (*)())imageBase, nullptr, false);
+                        TTY::Print("Executing at %p!\n", imageBase);
+                        auto *mainFunc = reinterpret_cast<int (*)(char32_t[])>(imageBase);
+                        int r = mainFunc(nullptr);
+                        //Task::Add(, nullptr, false);
                     }
                 }, nullptr, false);
             });
@@ -332,7 +371,8 @@ void Kernel_Main()
         systemBtn.height = 12;
         systemBtn.SetText("System");
         systemBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-            Task::Add([]() {
+            Task::Add([]()
+            {
                 auto& systemWin = g_Desktop->AddChild<UI::Window>();
                 systemWin.SetText("System information");
                 systemWin.x = 0;
@@ -346,9 +386,11 @@ void Kernel_Main()
                 infoTextbox.y = infoTextbox.x = 0;
                 infoTextbox.width = systemWin.width - 24;
                 infoTextbox.height = systemWin.height - 32;
-                infoTextbox.OnUpdate = [](UI::Widget& w) {
+                infoTextbox.OnUpdate = [](UI::Widget& w)
+                {
                     auto& o = static_cast<UI::Textbox&>(w);
-                    auto fmtPrint = [](const char *fmt, ...) {
+                    auto fmtPrint = [](const char *fmt, ...)
+                    {
                         va_list args;
                         va_start(args, fmt);
                         static char tmpbuf[300] = {};
@@ -385,8 +427,7 @@ void Kernel_Main()
 
     TTY::Print("System ready! Welcome to UDOS!\n");
     HimemAlloc::Print(HimemAlloc::Manager::GetDefault());
-
-    // Filesystem::Init();
+    // Filesys::Init();
 
     auto &uiMan = UI::Manager::Get();
     while (1)
@@ -395,28 +436,9 @@ void Kernel_Main()
         uiMan.Draw(g_Desktop.value(), 0, 0);
         uiMan.CheckRedraw(g_Desktop.value(), 0, 0);
         uiMan.CheckUpdate(g_Desktop.value(), ps2Mouse->GetX(), ps2Mouse->GetY(),
-                         ps2Mouse->buttons[0], ps2Mouse->buttons[1], ch);
+                          ps2Mouse->buttons[0], ps2Mouse->buttons[1], ch);
         uiMan.Update();
         g_KFrameBuffer.MoveMouse(ps2Mouse->GetX(), ps2Mouse->GetY());
         Task::Switch();
     }
 }
-
-#if 0
-iso9660: Entry Makefile.;1 (B)
-iso9660: Entry bg00.png;1 (A)
-iso9660: Entry bg01.png;1 (A)
-iso9660: Entry bg02.png;1 (A)
-iso9660: Entry bg03.png;1 (A)
-iso9660: Entry bg04.png;1 (A)
-iso9660: Entry bg05.png;1 (A)
-iso9660: Entry bg06.png;1 (A)
-iso9660: Entry bg07.png;1 (A)
-iso9660: Entry boot (4)
-iso9660: Entry boot.cat;1 (A)
-iso9660: Entry calc.cxx;1 (A)
-iso9660: Entry calc.d;1 (8)
-iso9660: Entry calc.elf;1 (A)
-iso9660: Entry calc.exe;1 (A)
-iso9660: End of table
-#endif

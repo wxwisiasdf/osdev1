@@ -73,7 +73,7 @@ static inline uint32_t IO_In32(uint16_t port)
 /// @return false if timeout exceeded, true if predicate was true
 namespace Task
 {
-    void Sleep(unsigned int usec);
+void Sleep(unsigned int usec);
 }
 template <typename P>
 inline bool IO_TimeoutWait(int usec, P pred)

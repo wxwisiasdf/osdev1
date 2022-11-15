@@ -17,13 +17,14 @@ import pic;
 #define ATA_DCR(x) (x + 0x206) // device control register
 
 ATAPI::Device::Device(ATAPI::Device::Bus _bus)
-    : bus{_bus}
+    : bus{_bus},
+    drive{ ATAPI::Device::Drive::NONE }
 {
     if (this->bus == Bus::PRIMARY)
         PIC::Get().SetIRQMask(14, false);
     else
         PIC::Get().SetIRQMask(15, false);
-    
+
     IO_Out8(this->bus + 0x206, 1 << 2); // Perform a software reset
     IO_In8(this->bus + 0x206); // Wait 100ns
     IO_Out8(this->bus + 0x206, 0); // Clear SRST back
@@ -59,23 +60,23 @@ bool ATAPI::Device::IsPresent()
     }
 
     if (!IO_TimeoutWait(1000, [this, &status]() -> bool
-                        {
-            status = IO_In8(this->bus + 7);
-            return !(status & 0x80); }))
+{
+    status = IO_In8(this->bus + 7);
+        return !(status & 0x80); }))
     {
         TTY::Print("atapi: Busy timeout\n");
         return false;
     }
 
     if (!IO_TimeoutWait(1000, [this, &status]() -> bool
-                        {
-            status = IO_In8(this->bus + 7);
-            return status & 0x8; }))
+{
+    status = IO_In8(this->bus + 7);
+        return status & 0x8; }))
     {
         TTY::Print("atapi: Data request bit timeout\n");
         return false;
     }
-    
+
     if (status & 0x1)
     {
         TTY::Print("atapi: Unexpected error after polling\n");
@@ -96,6 +97,9 @@ static bool dataReady[2] = {false, false};
 /// @return Whetever the command succeeded on send or not
 bool ATAPI::Device::SendCommand(uint8_t *cmd, size_t size)
 {
+    TTY::Print("WARNING: ENABLING THE FUCKING INTERRUPTS\n");
+    asm("sti");
+
     if (!this->IsPresent())
         return false;
 
@@ -107,17 +111,17 @@ bool ATAPI::Device::SendCommand(uint8_t *cmd, size_t size)
     uint8_t status;
     TTY::Print("atapi: Waiting for clear busy\n");
     if (!IO_TimeoutWait(1000, [this, &status]() -> bool
-                        {
-            status = IO_In8(this->bus + 7);
-            return !(status & 0x80); }))
-        return false;
-    
+{
+    status = IO_In8(this->bus + 7);
+        return !(status & 0x80); }))
+    return false;
+
     // Wait for DRQ to be set (indicates drive is ready for PIO data)
     if (!IO_TimeoutWait(1000, [this, &status]() -> bool
-                        {
-            status = IO_In8(this->bus + 7);
-            return status & 0x8; }))
-        return false;
+{
+    status = IO_In8(this->bus + 7);
+        return status & 0x8; }))
+    return false;
 
     // DRQ or ERROR set
     if (status & 0x1)
@@ -132,13 +136,15 @@ bool ATAPI::Device::SendCommand(uint8_t *cmd, size_t size)
     auto& isReady = dataReady[this->bus == ATAPI::Device::Bus::PRIMARY ? 0 : 1];
     TTY::Print("atapi: Wait for IRQ\n");
     if (!IO_TimeoutWait(30 * 1000, [this, &isReady]() -> bool
-                       { return isReady; }))
+{ return isReady; }))
     {
         TTY::Print("atapi: IRQ never arrived\n");
         return false;
     }
     isReady = false;
     TTY::Print("atapi: Command sent succesfully\n");
+
+    asm("cli");
     return true;
 }
 
@@ -146,7 +152,7 @@ void ATAPI::Device::SelectDrive(ATAPI::Device::Drive _drive)
 {
     if (this->drive == _drive) // Avoid huge delay
         return;
-    
+
     this->drive = _drive;
     TTY::Print("atapi: Switching bus %x to drive %x\n", this->bus, this->drive);
     // Select drive (only the slave-bit is set)

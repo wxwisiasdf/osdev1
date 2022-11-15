@@ -5,7 +5,8 @@ import locale;
 #include "vendor.hxx"
 #include "font.hxx"
 
-static constinit IconSet asciiIcons = {
+static constinit IconSet asciiIcons =
+{
     .format = IconSet::Format::BLACK_WHITE,
     .width = 8,
     .height = 8,
@@ -14,7 +15,8 @@ static constinit IconSet asciiIcons = {
     .colorMap = nullptr,
 };
 
-static constinit IconSet tagalogIcons = {
+static constinit IconSet tagalogIcons =
+{
     .format = IconSet::Format::BLACK_WHITE,
     .width = 16,
     .height = 8,
@@ -23,7 +25,8 @@ static constinit IconSet tagalogIcons = {
     .colorMap = nullptr,
 };
 
-static constinit IconSet devanagariIcons = {
+static constinit IconSet devanagariIcons =
+{
     .format = IconSet::Format::BLACK_WHITE,
     .width = 16,
     .height = 8,
@@ -32,7 +35,8 @@ static constinit IconSet devanagariIcons = {
     .colorMap = nullptr,
 };
 
-static constinit IconSet systemIcons = {
+static constinit IconSet systemIcons =
+{
     .format = IconSet::Format::BLACK_WHITE,
     .width = 8,
     .height = 8,
@@ -41,7 +45,8 @@ static constinit IconSet systemIcons = {
     .colorMap = nullptr,
 };
 
-static constinit IconSet emojiIcons = {
+static constinit IconSet emojiIcons =
+{
     .format = IconSet::Format::PLANE2,
     .width = 8,
     .height = 8,
@@ -59,7 +64,8 @@ Framebuffer::Framebuffer(multiboot_tag_framebuffer &tagfb)
     devanagariIcons.buffer = (const uint16_t *)&devanagariFont16x8;
     systemIcons.buffer = (const uint8_t *)&systemFont8x8;
     emojiIcons.buffer = (const uint16_t *)&emojiBitmap8x8;
-    static Color emojiColorMap4[4] = {
+    static Color emojiColorMap4[4] =
+    {
         Color(0x000000),
         Color(0xFF00FF),
         Color(0xFFFF00),
@@ -372,12 +378,12 @@ void Framebuffer::MoveMouse(unsigned new_x, unsigned new_y)
     for (unsigned int i = 0; i < 8; i++)
         for (unsigned int j = 0; j < 8; j++)
             this->PlotPixel(this->mouse_x + i, this->mouse_y + j, this->mouse_bf[i + j * 8]);
-    
+
     this->mouse_x = new_x;
     this->mouse_y = new_y;
     for (unsigned int i = 0; i < 8; i++)
         for (unsigned int j = 0; j < 8; j++)
             this->mouse_bf[i + j * 8] = this->GetPixel(this->mouse_x + i, this->mouse_y + j);
-    
+
     this->DrawMouse();
 }

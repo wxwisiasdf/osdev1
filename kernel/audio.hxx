@@ -8,31 +8,33 @@
 
 namespace Audio
 {
-    struct Sample
+struct Sample
+{
+    enum Format
     {
-        enum Format
-        {
-            NONE, // No format
-            PCM_U8, // 8-bit unsigned PCM
-        } fmt;
-        char buffer[MAX_HZ] ALIGN(4096);
-        size_t nBuffer;
-    };
+        NONE, // No format
+        PCM_U8, // 8-bit unsigned PCM
+    } fmt;
+    char buffer[MAX_HZ] ALIGN(4096);
+    size_t nBuffer;
+};
 
-    struct Driver
-    {
-        Driver() = default;
-        Driver(int _base, char inout, int bits);
-        Driver(Driver&) = delete;
-        Driver(Driver&&) = delete;
-        Driver& operator=(Driver&) = delete;
-        ~Driver() = default;
+struct Driver
+{
+    void *dummy = nullptr;
 
-        virtual void Start();
-        virtual void Pause();
-        virtual void Resume();
-        virtual void Finish();
-    };
+    Driver() = default;
+    Driver(int _base, char inout, int bits);
+    Driver(Driver&) = delete;
+    Driver(Driver&&) = delete;
+    Driver& operator=(Driver&) = delete;
+    ~Driver() = default;
+
+    virtual void Start();
+    virtual void Pause();
+    virtual void Resume();
+    virtual void Finish();
+};
 }
 
 #endif

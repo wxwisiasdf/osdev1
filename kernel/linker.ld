@@ -1,4 +1,4 @@
-ENTRY(_start)
+ENTRY(_start);
 PHDRS
 {
     text    PT_LOAD    FLAGS((1 << 0) | (1 << 2)) ; /* Execute + Read */

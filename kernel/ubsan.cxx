@@ -30,7 +30,7 @@ extern "C"
     {
         uint16_t kind;
         uint16_t info;
-        char name[];
+        char name[0];
     };
 
     struct ubsan_overflow
@@ -100,7 +100,7 @@ extern "C"
     {
         if (ubsan_lock)
             return;
-        
+
         ubsan_lock = true;
         if (loc != nullptr && loc->file != nullptr)
         {
@@ -163,7 +163,8 @@ extern "C"
 
     extern "C" UBSAN_FUNC void __ubsan_handle_type_mismatch_v1(ubsan_type_mismatch *data, uintptr_t ptr)
     {
-        const char *type_check_types[10] = {
+        const char *type_check_types[10] =
+        {
             "load of",
             "store to",
             "reference binding to",

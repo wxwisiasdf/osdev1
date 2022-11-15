@@ -15,7 +15,7 @@ static struct
     {
         GDT::Entry null = {};
         GDT::Entry system[MAX_GDT_ENTRIES] = {};
-    } entries;
+    } entries = {};
     GDT::Desc desc = {};
 } gdt;
 
@@ -90,9 +90,10 @@ void GDT::SetupTSS()
 {
     // PC of the first task is overriden with current pc ;)
     auto &task = Task::Add(&Kernel_Main, &g_KernStackTop, false);
-    
+
     static uint8_t dummyTaskStack[1024];
-    Task::Add([]() -> void {
+    Task::Add([]() -> void
+    {
         while (1)
         {
             //TTY::Print("A");
@@ -137,10 +138,12 @@ GDT::Entry &GDT::GetEntry(unsigned segment)
 static struct
 {
     IDT_Entry entries[256] = {};
-    IDT_Desc desc = {
+    IDT_Desc desc =
+    {
         .size = sizeof(entries) - 1,
         // TODO: Aliasing violation
-        .offset = (uintptr_t)&entries[0]};
+        .offset = (uintptr_t)&entries[0]
+    };
 } idt;
 
 #define INT_STUB(x)                            \
@@ -200,7 +203,8 @@ struct V86_IntContext
 #include "ui.hxx"
 extern "C" void IntException_Handler(uint32_t irq, V86_IntContext &ctx)
 {
-    static const char *errorNames[32] = {
+    static const char *errorNames[32] =
+    {
         "Divide-by-zero Error",           // 0x00
         "Debug",                          // 0x01
         "Non-maskable Interrupt",         // 0x02
@@ -505,9 +509,9 @@ void IDT_Init()
     // Exceptions
     for (size_t i = 0x00; i < 0x20; i++)
     {
-        idt.entries[i].gate_type = IDT_Entry::GATE_32TRAP;
+        idt.entries[i].flags.gate_type = IDT_Entry::GATE_32TRAP;
         idt.entries[i].seg_sel = GDT::KERNEL_XCODE;
-        idt.entries[i].present = 1;
+        idt.entries[i].flags.present = 1;
     }
     SET_ASM_STUB(00);
     SET_ASM_STUB(01);
@@ -545,9 +549,9 @@ void IDT_Init()
     // IRQs of devices or syscalls, all present w/ stubs
     for (unsigned int i = 0x20; i < 0xFF; i++)
     {
-        idt.entries[i].gate_type = IDT_Entry::GATE_32INT;
+        idt.entries[i].flags.gate_type = IDT_Entry::GATE_32INT;
         idt.entries[i].seg_sel = GDT::KERNEL_XCODE;
-        idt.entries[i].present = 1;
+        idt.entries[i].flags.present = 1;
     }
 
     SET_ASM_STUB(20);
@@ -690,8 +694,8 @@ void IDT_Init()
 
     // Task switch interrupt, $0x84 doesn't seem to be used by any
     // DOS program so this should be fine-ish
-    idt.entries[0x84].gate_type = IDT_Entry::GATE_TASK;
-    idt.entries[0x84].present = 1;
+    idt.entries[0x84].flags.gate_type = IDT_Entry::GATE_TASK;
+    idt.entries[0x84].flags.present = 1;
     idt.entries[0x84].set_offset(0);
 
     asm volatile("\tlidt %0\r\n"

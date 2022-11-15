@@ -33,7 +33,7 @@ struct VGA : public TTY::Terminal
     VGA(VGA&) = delete;
     VGA(VGA&&) = delete;
     VGA& operator=(const VGA&) = delete;
-    ~VGA() = default;
+    virtual ~VGA() = default;
     void PlotChar(char32_t ch);
 };
 

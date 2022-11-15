@@ -55,9 +55,9 @@ class Framebuffer
         uint8_t *rgb8_addr;
     };
     Color mouse_bf[8 * 8];
-    unsigned mouse_x = 0, mouse_y = 0;
-    unsigned pitch;
-    unsigned char bpp;
+    unsigned int mouse_x = 0, mouse_y = 0;
+    unsigned int pitch = 0;
+    unsigned char bpp = 0;
 
 public:
     Framebuffer() = default;
@@ -83,15 +83,13 @@ public:
     unsigned height;
 
     // Text rendering
-    int advance_x;
-    int advance_y;
-
+    signed int advance_x = 0, advance_y = 0;
     enum MouseMode
     {
         NORMAL,
         WAIT,
     } mouseMode = MouseMode::NORMAL;
-    int mouseKeyframe;
+    unsigned int mouseKeyframe = 0;
 };
 
 extern Framebuffer g_KFrameBuffer;

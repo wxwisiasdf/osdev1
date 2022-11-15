@@ -55,7 +55,7 @@ void UI::Manager::Draw(UI::Widget &w, int ox, int oy)
         if (child.flex != UI::Widget::Flex::NONE)
         {
             this->Draw(child, w.ox + w.padding_left + extra_x,
-                        w.oy + w.padding_top + extra_y);
+                       w.oy + w.padding_top + extra_y);
             if (child.flex == UI::Widget::Flex::ROW)
                 extra_x += child.width;
             else if (child.flex == UI::Widget::Flex::COLUMN)
@@ -63,7 +63,7 @@ void UI::Manager::Draw(UI::Widget &w, int ox, int oy)
         }
         else
             this->Draw(child, w.ox + w.padding_left,
-                        w.oy + w.padding_top);
+                       w.oy + w.padding_top);
     }
 }
 
@@ -74,11 +74,11 @@ void UI::Manager::CheckRedraw(UI::Widget &, int, int)
     w.oy = w.y + oy;
     for (size_t i = 0; i < w.children.size(); i++)
         this->CheckRedraw(*w.children[i], w.ox + w.padding_left,
-                            w.oy + w.padding_top);
-    
+                          w.oy + w.padding_top);
+
     // Redraw widget iff inside the drawn-over boundary box
     if (this->drawn_x2 >= w.ox && this->drawn_x1 <= w.ox + w.width
-    && this->drawn_y2 >= w.oy && this->drawn_y1 <= w.oy + w.height)
+            && this->drawn_y2 >= w.oy && this->drawn_y1 <= w.oy + w.height)
         w.needs_redraw = true;
 #endif
 }
@@ -139,7 +139,8 @@ void UI::Manager::CheckUpdate(UI::Widget &w, unsigned mx, unsigned my, bool left
         if (left || right)
         {
             if (left && w.dragable)
-            { // Drag the widget
+            {
+                // Drag the widget
                 this->drag_x = mx;
                 this->drag_y = my;
                 this->drag_widget = &w;
@@ -264,7 +265,7 @@ UI::Widget::~Widget()
         auto it = std::find(std::begin(this->parent->children), std::end(this->parent->children), this);
         if (it != std::end(this->parent->children))
             this->parent->children.erase(it);
-        
+
         // TODO: Assert we need redraw at all
         this->parent->Redraw();
     }
@@ -569,7 +570,7 @@ void UI::Window::Decorate()
     this->closeBtn->SetText("X");
     this->closeBtn->OnClick = ([](UI::Widget &w, unsigned, unsigned, bool,
                                   bool) -> void
-                               { static_cast<UI::Window &>(*w.parent).isClosed = true; });
+    { static_cast<UI::Window &>(*w.parent).isClosed = true; });
     this->AddChildDirect(this->closeBtn.value());
 
     this->minimBtn.emplace();
@@ -579,7 +580,7 @@ void UI::Window::Decorate()
     this->minimBtn->SetText("-");
     this->minimBtn->OnClick = ([](UI::Widget &w, unsigned, unsigned, bool,
                                   bool) -> void
-                               { static_cast<UI::Window &>(*w.parent).isClosed = true; });
+    { static_cast<UI::Window &>(*w.parent).isClosed = true; });
     this->AddChildDirect(this->minimBtn.value());
 }
 
@@ -626,12 +627,14 @@ UI::Terminal::Terminal()
     this->padding_left = 4;
     // Update accordingly if the terminal has updated
     this->OnUpdate = ([](UI::Widget &w)
-                      {
+    {
         auto& o = static_cast<UI::Terminal&>(w);
-        if(o.term.modified) {
+        if(o.term.modified)
+        {
             o.Redraw();
             o.term.modified = false;
-        } });
+        }
+    });
 }
 
 void UI::Terminal::Draw()

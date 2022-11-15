@@ -7,12 +7,6 @@ import locale;
 #include "tty.hxx"
 #include "vendor.hxx"
 
-TTY::Terminal::~Terminal()
-{
-    if (this->kernelManaged)
-        this->DetachFromKernel(*this);
-}
-
 void TTY::Terminal::Putc(char32_t ch)
 {
     switch (ch)
@@ -149,34 +143,31 @@ void TTY::Print_1(char *buffer, size_t size, const char *fmt, va_list args)
     *buffer++ = '\0';
 }
 
-void TTY::Print(const char *fmt, ...)
+void TTY::Vprint(const char *fmt, va_list ap)
 {
-    va_list args;
-    va_start(args, fmt);
     char tmpbuf[128] = {};
-    TTY::Print_1(tmpbuf, sizeof(tmpbuf), fmt, args);
-
+    TTY::Print_1(tmpbuf, sizeof(tmpbuf), fmt, ap);
     for (size_t i = 0; i < ARRAY_SIZE(kernelTerms); i++)
         if (kernelTerms[i] != nullptr)
             kernelTerms[i]->Print(tmpbuf);
-    va_end(args);
+}
+
+void TTY::Print(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    TTY::Vprint(fmt, ap);
+    va_end(ap);
 }
 
 void TTY::Print(const char32_t *fmt, ...)
 {
-    va_list args;
-    va_start(args, fmt);
-    char tmpbuf[128] = {};
-
-    std::string normalFmt;
-    while (*fmt != U'\0')
-        normalFmt.push_back(static_cast<char>(*fmt));
-    
-    TTY::Print_1(tmpbuf, sizeof(tmpbuf), normalFmt.c_str(), args);
-
-    for (size_t i = 0; i < ARRAY_SIZE(kernelTerms); i++)
-        if (kernelTerms[i] != nullptr)
-            kernelTerms[i]->Print(tmpbuf);
-    va_end(args);
+    va_list ap;
+    va_start(ap, fmt);
+    //std::string normalFmt;
+    //while (*fmt != U'\0')
+    //    normalFmt.push_back(static_cast<char>(*fmt));
+    //TTY::Vprint(normalFmt.c_str(), ap);
+    va_end(ap);
 }
 
