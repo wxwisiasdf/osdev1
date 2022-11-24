@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cassert>
+#include <memory>
 
 /// @brief Feistel function for the blowfish cryptograpghic algorithm
 /// @param S The S-box array
@@ -312,12 +313,12 @@ int main(int argc, char **argv)
 {
     if (argc < 3)
     {
-        std::cerr << "Usage " << argv[0] << " [keyfile] [file-to-encrypt] [output]" << std::endl;
-        uint32_t parray[32];
-        uint32_t sbox[4][256];
+        std::cerr << "Usage " << argv[0] << " [key] [file-to-encrypt] [output]" << std::endl;
+        static uint32_t parray[32];
+        static uint32_t sbox[4][256];
 
-        const char *key = "A";
-        const size_t keylen = 1;
+        const char *key = "UDOSBESTOSEVER";
+        const size_t keylen = strlen(key);
         const char *msg = "Hello world    ";
         const size_t msglen = 16;
         char encryptBuf[msglen + 1];
@@ -334,6 +335,26 @@ int main(int argc, char **argv)
         decryptBuf[msglen] = '\0';
         std::cout << "Decrypted: '" << decryptBuf << "'" << std::endl;
         return -1;
+    }
+
+    const char *key = argv[1];
+    const char *inputFilename = argv[2];
+    const char *outputFilename = argv[3];
+
+    static uint32_t parray[32];
+    static uint32_t sbox[4][256];
+    genkey(parray, sbox, key, strlen(key));
+
+    std::unique_ptr<FILE, decltype(&fclose)> inputFile(fopen(inputFilename, "rb"), &fclose);
+    std::unique_ptr<FILE, decltype(&fclose)> outputFile(fopen(outputFilename, "wb"), &fclose);
+    while(!feof(inputFile.get()))
+    {
+        static uint8_t inTmpbuf[8 * 256];
+        fread(inTmpbuf, 1, sizeof(inTmpbuf), inputFile.get());
+
+        static uint8_t outTmpbuf[8 * 256];
+        encrypt(outTmpbuf, parray, sbox, inTmpbuf, sizeof(inTmpbuf));
+        fwrite(outTmpbuf, 1, sizeof(outTmpbuf), outputFile.get());
     }
     return 0;
 }

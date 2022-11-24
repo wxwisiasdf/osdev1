@@ -1548,6 +1548,6 @@ int UDOS_32Main(char32_t[])
     return 0;
 }
 
-__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+__attribute__((section(".data.startup"))) AppKit::ProgramInfo pgInfo = {
     .entryPoint = &UDOS_32Main
 };

@@ -69,7 +69,7 @@ class MainWindow
 end-class
 #endif
 
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+__attribute__((section(".data.startup"))) int UDOS_32Main(char32_t[])
 {
     TTY::Print("Hello world\n");
 

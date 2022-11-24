@@ -7,7 +7,7 @@
 #include <kernel/tty.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+__attribute__((section(".data.startup"))) int UDOS_32Main(char32_t[])
 {
     auto& systemWin = g_Desktop->AddChild<UI::Window>();
     systemWin.SetText("System information");

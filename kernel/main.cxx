@@ -22,6 +22,7 @@
 #include "ps2.hxx"
 #include "locale.hxx"
 #include "filesys.hxx"
+#include "drm.hxx"
 
 struct Regs
 {
@@ -341,9 +342,16 @@ void Kernel_Main()
             serialKeyBtn.y = 16;
             serialKeyBtn.width = serialKeyWin.width - 12;
             serialKeyBtn.height = 12;
-            serialKeyBtn.SetText("Go");
+            serialKeyBtn.SetText("Check");
             serialKeyBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
+                static char tmpbuf[100];
+                for(size_t i = 0; i < 100; i++)
+                    tmpbuf[i] = serialKeyTextbox->textBuffer[i];
 
+                if(!DRM::Blowfish::IsValidSerialKey(*tmpbuf))
+                {
+                    UI::Manager::Get().ErrorMsg(*"DRM", *"Serial key is invalid, proceeding to crash the OS");
+                }
             });
         });
 

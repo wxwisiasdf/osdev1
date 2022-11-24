@@ -309,6 +309,30 @@ void Decrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256],
         out[i] = chunk;
     }
 }
+
+bool IsValidSerialKey(const char& key)
+{
+    static const char expected[] = {
+        'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', ' ',' ',' ',' ', '\0'
+    };
+    static const unsigned char test[] = {
+        0x61, 0x1f, 0x15, 0xca, 0xda, 0x87, 0x76, 0x59,
+        0xea, 0xb1, 0x05, 0x2d, 0xbd, 0x22, 0x33, 0xb8
+    };
+
+    static uint32_t parray[32];
+    static uint32_t sbox[4][256];
+    GenKey(parray, sbox, &key, std::strlen(&key));
+
+    static char tmpbuf[sizeof(test)];
+    Decrypt(tmpbuf, parray, sbox, test, sizeof(test));
+
+    static_assert(sizeof(tmpbuf) == sizeof(expected));
+    static_assert(sizeof(tmpbuf) == sizeof(test));
+    if(std::memcmp(tmpbuf, expected, sizeof(tmpbuf)))
+        return true;
+    return false;
+}
 }
 
 #endif
