@@ -1,3 +1,6 @@
+#ifndef LOCALE_HXX
+#define LOCALE_HXX 1
+
 #include <cstddef>
 
 namespace Locale
@@ -222,3 +225,5 @@ constexpr void Convert(char *str, size_t n)
         *str = Locale::Convert<S, D>(*str);
 }
 }
+
+#endif

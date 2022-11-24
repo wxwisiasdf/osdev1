@@ -1,3 +1,6 @@
+#ifndef PCI_HXX
+#define PCI_HXX 1
+
 #include <cstdint>
 #include "vendor.hxx"
 
@@ -110,3 +113,5 @@ struct Device
     uint8_t func;
 };
 }
+
+#endif

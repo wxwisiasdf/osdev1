@@ -193,7 +193,6 @@ extern "C" void IntEDh_Handler()
     Task::EnableSwitch();
 }
 
-extern std::optional<UI::Desktop> g_Desktop;
 __attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
 {
     IDT::AddHandler(0xED, &IntEDh_Handler);

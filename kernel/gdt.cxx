@@ -473,7 +473,6 @@ INT_STUB(E6);
 INT_STUB(E7);
 // INT_STUB(E8); -- Implemented by pit.cxx
 extern "C" void IntE8h_AsmStub();
-extern "C" void IntE8h_Handler();
 // INT_STUB(E9); -- Implemented by ps2.cxx
 extern "C" void IntE9h_AsmStub();
 extern "C" void IntE9h_Handler();

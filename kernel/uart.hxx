@@ -61,5 +61,5 @@ struct Device
         IO_Out8(0xE9, ch);
     }
 };
-std::optional<UART::Device> com[2];
+extern std::optional<Device> com[2];
 }

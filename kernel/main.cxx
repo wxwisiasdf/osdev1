@@ -199,18 +199,6 @@ void Kernel_Main()
     UI::Manager::Get().Draw(*bootTerm, 0, 0);
 
     // Controllers
-    TTY::Print("Initializing EHCI USB\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-
-    static std::optional<EHCI::Device> usbDevice;
-    usbDevice.emplace(PCI::Device
-    {
-        .bus = 0,
-        .slot = 4,
-        .func = 0,
-    });
-
     TTY::Print("Initializing PS2\n");
     bootTerm->Redraw();
     UI::Manager::Get().Draw(*bootTerm, 0, 0);

@@ -105,11 +105,4 @@ public:
     }
 };
 
-PIC PIC::pic;
-
-extern "C" void IntF5h_Handler()
-{
-    PIC::Get().EOI(13);
-}
-
 #endif

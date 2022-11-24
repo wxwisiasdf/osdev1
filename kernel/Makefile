@@ -21,6 +21,9 @@ LDFLAGS += \
 
 # Low-level bootstrap devices
 KERNEL_CXX_SRCS := \
+	pit.cxx \
+	pic.cxx \
+	uart.cxx \
 	ubsan.cxx
 
 # Middle-end devices
