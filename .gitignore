@@ -8,6 +8,10 @@ gcm.cache/
 .vscode/
 *.elf
 isodir/
+docs/
+
+tools/eezcrypt
+tools/elf2ld
 
 qemu.txt
 dump.txt

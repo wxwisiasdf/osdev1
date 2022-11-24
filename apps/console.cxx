@@ -2,12 +2,13 @@
 /// Console GUI program
 
 #include <optional>
+#include <kernel/appkit.hxx>
 #include <kernel/ui.hxx>
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+int UDOS_32Main(char32_t[])
 {
     static std::optional<UI::Window> consoleWin;
     consoleWin.emplace();
@@ -52,3 +53,7 @@ __attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
     consoleWin->Kill();
     return 0;
 }
+
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};

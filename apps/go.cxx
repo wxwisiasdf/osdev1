@@ -2,6 +2,7 @@
 /// Implementation of Go
 
 #include <optional>
+#include <kernel/appkit.hxx>
 #include <kernel/ui.hxx>
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
@@ -1293,7 +1294,7 @@ static unsigned char gameSpriteData[] = {
 };
 
 extern std::optional<UI::Desktop> g_Desktop;
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+int UDOS_32Main(char32_t[])
 {
     struct Playfield
     {
@@ -1577,3 +1578,7 @@ __attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
     gameWindow.Kill();
     return 0;
 }
+
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};

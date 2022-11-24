@@ -1,11 +1,11 @@
-// sb16.exe
-// Soundblaster 16 program
-//
+/// sb16.exe
+/// Soundblaster 16 program
 
+#include <cstdint>
+#include <kernel/appkit.hxx>
 #include <kernel/pic.hxx>
 #include <kernel/dma.hxx>
 #include <kernel/pci.hxx>
-#include <cstdint>
 #include <kernel/audio.hxx>
 #include <kernel/vendor.hxx>
 #include <kernel/assert.hxx>
@@ -193,7 +193,7 @@ extern "C" void IntEDh_Handler()
     Task::EnableSwitch();
 }
 
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+int UDOS_32Main(char32_t[])
 {
     IDT::AddHandler(0xED, &IntEDh_Handler);
     TTY::Print("sb16 setup, drive running as TSR!\n");
@@ -203,4 +203,8 @@ __attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
     IDT::RemoveHandler(0xED, &IntEDh_Handler);
     return 0;
 }
+
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};
 

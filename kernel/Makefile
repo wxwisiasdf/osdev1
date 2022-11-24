@@ -23,6 +23,7 @@ LDFLAGS += \
 KERNEL_CXX_SRCS := \
 	pit.cxx \
 	pic.cxx \
+	pci.cxx \
 	uart.cxx \
 	ubsan.cxx
 

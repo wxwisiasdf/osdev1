@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstddef>
+#include <kernel/appkit.hxx>
 #include <kernel/tty.hxx>
 #include <kernel/vendor.hxx>
 
@@ -37,3 +38,13 @@ Floppy::Driver::Driver()
     drives[1] = static_cast<Floppy::Driver::DriveType>(ch & 0x0F);
     TTY::Print("floppy: Drive 1=%i,2=%i\n", drives[0], drives[1]);
 }
+
+int UDOS_32Main(char32_t[])
+{
+    TTY::Print("floppy driver :D\n");
+    return 0;
+}
+
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};

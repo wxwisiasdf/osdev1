@@ -1,6 +1,7 @@
-#include <kernel/pci.hxx>
 #include <cstdint>
 #include <cstddef>
+#include <kernel/appkit.hxx>
+#include <kernel/pci.hxx>
 #include <kernel/vendor.hxx>
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
@@ -61,7 +62,7 @@ struct Device : public PCI::Device
 
     Device(const PCI::Device &dev)
         : PCI::Device(dev),
-          base{ reinterpret_cast<decltype(base)>(PCI::Read32(this->bus, this->slot, this->func, offsetof(PCI::Header, bar[0]))) },
+          base{ reinterpret_cast<decltype(base)>(this->Read32(offsetof(PCI::Header, bar[0]))) },
           hccregs{ reinterpret_cast<decltype(hccregs)>(this->base) },
           opregs{ reinterpret_cast<decltype(opregs)>(reinterpret_cast<uint8_t *>(this->base) + this->hccregs->caplen) }
     {
@@ -86,15 +87,15 @@ struct Device : public PCI::Device
         TTY::Print("ehci: eecp at %p\n", this->eecp);
         if (this->eecp >= 0x40)
         {
-            uintptr_t lsup = PCI::Read32(this->bus, this->slot, this->func, this->eecp + USBLEGSUP);
+            uintptr_t lsup = this->Read32(this->eecp + USBLEGSUP);
             if (!(lsup & USBLEGSUP_HC_OS))
             {
                 lsup |= USBLEGSUP_HC_OS;
-                PCI::Write32(this->bus, this->slot, this->func, this->eecp + USBLEGSUP, lsup);
-                lsup = PCI::Read32(this->bus, this->slot, this->func, this->eecp + USBLEGSUP);
+                this->Write32(this->eecp + USBLEGSUP, lsup);
+                lsup = this->Read32(this->eecp + USBLEGSUP);
                 while (lsup & USBLEGSUP_HC_BIOS)
                 {
-                    lsup = PCI::Read32(this->bus, this->slot, this->func, this->eecp + USBLEGSUP);
+                    lsup = this->Read32(this->eecp + USBLEGSUP);
                     TTY::Print("ehci: waiting to reclaim...\n");
                 }
             }
@@ -143,7 +144,7 @@ struct Device : public PCI::Device
 };
 }
 
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+int UDOS_32Main(char32_t[])
 {
     TTY::Print("USB driver online! ^-^\n");
     while(1)
@@ -152,3 +153,6 @@ __attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
     return 0;
 }
 
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};

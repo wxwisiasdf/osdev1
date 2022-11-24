@@ -2,12 +2,13 @@
 /// Program runner
 
 #include <optional>
+#include <kernel/appkit.hxx>
 #include <kernel/ui.hxx>
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+int UDOS_32Main(char32_t[])
 {
     static std::optional<UI::Window> runWin;
     runWin.emplace();
@@ -57,3 +58,7 @@ __attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
         Task::Switch();
     return 0;
 }
+
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};

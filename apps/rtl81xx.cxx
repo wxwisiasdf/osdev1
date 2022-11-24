@@ -1,6 +1,7 @@
-#include <kernel/pci.hxx>
 #include <cstdint>
 #include <cstddef>
+#include <kernel/appkit.hxx>
+#include <kernel/pci.hxx>
 #include <kernel/tty.hxx>
 #include <kernel/vendor.hxx>
 
@@ -83,3 +84,13 @@ struct Device : public PCI::Device
     }
 };
 }
+
+int UDOS_32Main(char32_t[])
+{
+    TTY::Print("multimedia spieler: Wilkommen");
+    return 0;
+}
+
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};

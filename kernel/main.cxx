@@ -202,7 +202,7 @@ void Kernel_Main()
     TTY::Print("Initializing PS2\n");
     bootTerm->Redraw();
     UI::Manager::Get().Draw(*bootTerm, 0, 0);
-
+    
     static std::optional<PS2::Controller> ps2Controller;
     ps2Controller.emplace();
 
@@ -310,6 +310,43 @@ void Kernel_Main()
         startMenu->y = (g_KFrameBuffer.height - 20) - startMenu->height;
         g_Desktop->AddChildDirect(startMenu.value());
 
+        auto& serialKeyBtn = startMenu->AddChild<UI::Button>();
+        serialKeyBtn.flex = startMenu->flex;
+        serialKeyBtn.x = serialKeyBtn.y = 0;
+        serialKeyBtn.width = startMenu->width - 12;
+        serialKeyBtn.height = 12;
+        serialKeyBtn.SetText("Enter serial key");
+        serialKeyBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
+            auto& serialKeyWin = g_Desktop->AddChild<UI::Window>();;
+            serialKeyWin.SetText("Input your unique serial key");
+            serialKeyWin.x = serialKeyWin.y = 0;
+            serialKeyWin.width = 200;
+            serialKeyWin.height = 64;
+            serialKeyWin.Decorate();
+
+            static std::optional<UI::Textbox> serialKeyTextbox;
+            serialKeyTextbox.emplace();
+            serialKeyTextbox->x = serialKeyTextbox->y = 0;
+            serialKeyTextbox->width = serialKeyWin.width - 12;
+            serialKeyTextbox->height = 12;
+            serialKeyTextbox->SetText("");
+            serialKeyTextbox->SetTooltipText("Your serial key\nHint: It's 'SERIAL0'");
+            serialKeyTextbox->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
+
+            });
+            serialKeyWin.AddChildDirect(serialKeyTextbox.value());
+            
+            auto& serialKeyBtn = serialKeyWin.AddChild<UI::Button>();
+            serialKeyBtn.x = 0;
+            serialKeyBtn.y = 16;
+            serialKeyBtn.width = serialKeyWin.width - 12;
+            serialKeyBtn.height = 12;
+            serialKeyBtn.SetText("Go");
+            serialKeyBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
+
+            });
+        });
+
         auto& runBtn = startMenu->AddChild<UI::Button>();
         runBtn.flex = startMenu->flex;
         runBtn.x = runBtn.y = 0;
@@ -346,9 +383,8 @@ void Kernel_Main()
             runBtn.SetText("Run");
             runBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
                 if(runTask != nullptr)
-                {
                     performRunTask = true;
-                }
+                
                 runTask = &Task::Add([]() -> void  {
                 doRunTask:
                     static char tmpbuf[100];

@@ -10,17 +10,17 @@ namespace DRM::Blowfish {
 /// @param S The S-box array
 /// @param x The value to mutate with the S-box
 /// @return * Result of the function
-static uint32_t feinstelF(const uint32_t S[4][256], uint32_t x)
+static uint32_t FeinstelF(const uint32_t S[4][256], uint32_t x)
 {
     const uint32_t h = S[0][x >> 24] + S[1][x >> 16 & 0xff];
     return (h ^ S[2][x >> 8 & 0xff]) + S[3][x & 0xff];
 }
 
-static void encryptV(const uint32_t P[32], const uint32_t S[4][256], uint32_t *L, uint32_t *R)
+static void EncryptV(const uint32_t P[32], const uint32_t S[4][256], uint32_t *L, uint32_t *R)
 {
     for(size_t r = 0; r < 16; r++) {
         *L = *L ^ P[r];
-        *R = feinstelF(S, *L) ^ *R;
+        *R = FeinstelF(S, *L) ^ *R;
         std::swap(*L, *R);
     }
     std::swap(*L, *R);
@@ -28,11 +28,11 @@ static void encryptV(const uint32_t P[32], const uint32_t S[4][256], uint32_t *L
     *L = *L ^ P[17];
 }
 
-static void decryptV(const uint32_t P[32], const uint32_t S[4][256], uint32_t *L, uint32_t *R)
+static void DecryptV(const uint32_t P[32], const uint32_t S[4][256], uint32_t *L, uint32_t *R)
 {
     for(size_t r = 17; r > 1; r--) {
         *L = *L ^ P[r];
-        *R = feinstelF(S, *L) ^ *R;
+        *R = FeinstelF(S, *L) ^ *R;
         std::swap(*L, *R);
     }
     std::swap(*L, *R);
@@ -45,7 +45,7 @@ static void decryptV(const uint32_t P[32], const uint32_t S[4][256], uint32_t *L
 /// @param sbox Pointer to a bidimensional array of [4][256] 32-bit elements making up the final S-box
 /// @param key The key to be used as a base for the P-array and S-box
 /// @param keylen The length of the key
-void genkey(uint32_t parray[32], uint32_t sbox[4][256], const void *key, size_t keylen)
+void GenKey(uint32_t parray[32], uint32_t sbox[4][256], const void *key, size_t keylen)
 {
     /// @brief The S-box initial permutation for blowfish, from the digits of Pi. Source:
     /// https://www.schneier.com/wp-content/uploads/2015/12/constants-2.txt
@@ -252,14 +252,14 @@ void genkey(uint32_t parray[32], uint32_t sbox[4][256], const void *key, size_t 
     // Blowfish key expansion
     uint32_t L = 0, R = 0;
     for(size_t i = 0; i < 18; i += 2) {
-        encryptV(parray, sbox, &L, &R);
+        EncryptV(parray, sbox, &L, &R);
         parray[i] = L;
         parray[i + 1] = R;
     }
 
     for(size_t i = 0; i < 4; i++) {
         for(size_t j = 0; j < 256; j += 2) {
-            encryptV(parray, sbox, &L, &R);
+            EncryptV(parray, sbox, &L, &R);
             sbox[i][j] = L;
             sbox[i][j + 1] = L;
         }
@@ -270,9 +270,9 @@ void genkey(uint32_t parray[32], uint32_t sbox[4][256], const void *key, size_t 
 /// @param _out 
 /// @param parray
 /// @param sbox
-/// @param _data Data to encrypt
+/// @param _data Data to Encrypt
 /// @param size Size of the encrypted data
-void encrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256], const void *_data, size_t len)
+void Encrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256], const void *_data, size_t len)
 {
     assert(len % sizeof(uint64_t) == 0);
     const auto *data = reinterpret_cast<const uint64_t *>(_data);
@@ -282,7 +282,7 @@ void encrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256],
         uint64_t chunk = data[i];
         auto l = static_cast<uint32_t>((chunk >> 32) & 0xFFFFFFFF);
         auto r = static_cast<uint32_t>(chunk & 0xFFFFFFFF);
-        encryptV(parray, sbox, &l, &r);
+        EncryptV(parray, sbox, &l, &r);
         chunk = (static_cast<decltype(chunk)>(l) << 32) | r; // Obtain result from encryption
         out[i] = chunk;
     }
@@ -294,7 +294,7 @@ void encrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256],
 /// @param sbox 
 /// @param _data 
 /// @param size 
-void decrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256], const void *_data, size_t len)
+void Decrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256], const void *_data, size_t len)
 {
     assert(len % sizeof(uint64_t) == 0);
     const auto *data = reinterpret_cast<const uint64_t *>(_data);
@@ -304,7 +304,7 @@ void decrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256],
         uint64_t chunk = data[i];
         auto l = static_cast<uint32_t>((chunk >> 32) & 0xFFFFFFFF);
         auto r = static_cast<uint32_t>(chunk & 0xFFFFFFFF);
-        decryptV(parray, sbox, &l, &r);
+        DecryptV(parray, sbox, &l, &r);
         chunk = (static_cast<decltype(chunk)>(l) << 32) | r; // Obtain result from decryption
         out[i] = chunk;
     }

@@ -2,13 +2,14 @@
 /// Calculator program
 
 #include <optional>
+#include <kernel/appkit.hxx>
 #include <kernel/ui.hxx>
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 #include <kernel/alloc.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
-__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+int UDOS_32Main(char32_t[])
 {
     auto& calcWindow = g_Desktop->AddChild<UI::Window>();
     calcWindow.x = 0;
@@ -51,3 +52,7 @@ __attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
     calcWindow.Kill();
     return 0;
 }
+
+__attribute__((section(".text.startup"))) AppKit::ProgramInfo pgInfo = {
+    .entryPoint = &UDOS_32Main
+};
