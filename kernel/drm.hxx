@@ -312,6 +312,9 @@ void Decrypt(void *_out, const uint32_t parray[32], const uint32_t sbox[4][256],
 
 bool IsValidSerialKey(const char& key)
 {
+    if(!std::strlen(&key))
+        return false;
+
     static const char expected[] = {
         'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', ' ',' ',' ',' ', '\0'
     };

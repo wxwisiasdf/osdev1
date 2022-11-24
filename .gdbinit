@@ -6,4 +6,5 @@ br Kernel_Main()
 br Int0Ah_AsmStub
 br Int0Dh_AsmStub
 br *0x1000000
+awatch *0x10000
 c

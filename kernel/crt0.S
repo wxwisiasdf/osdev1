@@ -36,6 +36,7 @@ multiboot_header:
     .long multiboot_header_end - multiboot_header
     /*  checksum */
     .long -(MULTIBOOT2_HEADER_MAGIC + GRUB_MULTIBOOT_ARCHITECTURE_I386 + (multiboot_header_end - multiboot_header))
+#if 0
 framebuffer_tag_start:
     .short MULTIBOOT_HEADER_TAG_FRAMEBUFFER
     .short MULTIBOOT_HEADER_TAG_OPTIONAL
@@ -44,6 +45,7 @@ framebuffer_tag_start:
     .long 200
     .long 24
 framebuffer_tag_end:
+#endif
 #ifndef __ELF__
 address_tag_start:
     .short MULTIBOOT_HEADER_TAG_ADDRESS

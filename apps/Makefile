@@ -20,6 +20,7 @@ LDFLAGS += \
 	-static-libgcc
 
 PROGRAMS := \
+	sysex.exe \
 	hello.exe \
 	calc.exe \
 	mplay.exe \

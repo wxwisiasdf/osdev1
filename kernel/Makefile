@@ -25,7 +25,8 @@ KERNEL_CXX_SRCS := \
 	pic.cxx \
 	pci.cxx \
 	uart.cxx \
-	ubsan.cxx
+	ubsan.cxx \
+	ps2.cxx
 
 # Middle-end devices
 KERNEL_CXX_SRCS += \

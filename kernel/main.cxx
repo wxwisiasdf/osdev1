@@ -23,6 +23,7 @@
 #include "locale.hxx"
 #include "filesys.hxx"
 #include "drm.hxx"
+#include "appkit.hxx"
 
 struct Regs
 {
@@ -100,6 +101,7 @@ extern uint8_t rodata_start, rodata_end;
 extern uint8_t data_start, data_end;
 
 static bool kernelInitLock = false;
+static bool hasGraphics = false;
 extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
 {
     if(kernelInitLock)
@@ -111,19 +113,7 @@ extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
     static uint8_t memHeap[65536 * 8];
     HimemAlloc::AddRegion(HimemAlloc::Manager::GetDefault(), (void *)memHeap, sizeof(memHeap) - 1);
 
-    UART::com[0].emplace(0x3F8); // Initialize COM1
-
-    static std::optional<TTY::Terminal> comTerm;
-    comTerm.emplace();
-    comTerm->AttachToKernel(comTerm.value());
-
-    TTY::Print("Hello world\n");
-    TTY::Print("Numbers %i,%u!!!\n", 69, 420);
-
-    if (magic != MULTIBOOT2_BOOTLOADER_MAGIC)
-        return;
-
-    for (auto *tag = (multiboot_tag *)(addr + 8);
+    /*for (auto *tag = (multiboot_tag *)(addr + 8);
             tag->type != MULTIBOOT_TAG_TYPE_END;
             tag = reinterpret_cast<decltype(tag)>((multiboot_uint8_t *)tag + ((tag->size + 7) & ~7)))
     {
@@ -134,12 +124,31 @@ extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
             new (&g_KFrameBuffer) Framebuffer(*(multiboot_tag_framebuffer *)tag);
             auto &uiMan = UI::Manager::Get();
             new (&uiMan) UI::Manager(g_KFrameBuffer);
+            hasGraphics = true;
         }
         break;
         default:
             break;
         }
+    }*/
+
+    UART::com[0].emplace(0x3F8); // Initialize COM1
+    static std::optional<TTY::Terminal> comTerm;
+    comTerm.emplace();
+    comTerm->AttachToKernel(comTerm.value());
+
+    if(!hasGraphics)
+    {
+        static std::optional<VGATerm> vgaTerm;
+        vgaTerm.emplace();
+        vgaTerm->AttachToKernel(vgaTerm.value());
     }
+
+    TTY::Print("Hello world\n");
+    TTY::Print("Numbers %i,%u!!!\n", 69, 420);
+
+    if (magic != MULTIBOOT2_BOOTLOADER_MAGIC)
+        return;
 
     GDT::Init();
     IDT::Init();
@@ -169,6 +178,11 @@ static inline std::vector<std::string> SplitStrings(const std::string& s, char s
 }
 #endif 
 
+std::optional<PS2::Controller> ps2Controller;
+std::optional<PS2::Keyboard> ps2Keyboard;
+std::optional<PS2::Mouse> ps2Mouse;
+std::optional<ATAPI::Device> atapiDevices[2];
+std::optional<ISO9660::Device> isoCdrom;
 // Main event handler, for keyboard and mouse
 static bool kernelMainLock = false;
 void Kernel_Main()
@@ -184,54 +198,26 @@ void Kernel_Main()
     Task::EnableSwitch();
     asm("sti"); // Always enable interrupts on the dummy task
 
-    static std::optional<UI::Terminal> bootTerm;
-    bootTerm.emplace();
-    bootTerm->x = bootTerm->y = 0;
-    bootTerm->width = g_KFrameBuffer.width;
-    bootTerm->height = g_KFrameBuffer.height;
-    bootTerm->term.AttachToKernel(bootTerm->term);
-
     TTY::Print("Initializing early boot\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-
     TTY::Print("Enabled interrupts and dying softly\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
 
     // Controllers
     TTY::Print("Initializing PS2\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-    
-    static std::optional<PS2::Controller> ps2Controller;
     ps2Controller.emplace();
 
     // Input
     TTY::Print("Initializing PS2 keyboard\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-    static std::optional<PS2::Keyboard> ps2Keyboard;
     ps2Keyboard.emplace(ps2Controller.value());
 
     TTY::Print("Initializing the fucking PS2 mouse\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-    static std::optional<PS2::Mouse> ps2Mouse;
     ps2Mouse.emplace(ps2Controller.value());
 
     // Storage
     TTY::Print("Initializing ATAPI\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-    static std::optional<ATAPI::Device> atapiDevices[2];
     atapiDevices[0].emplace(ATAPI::Device::Bus::PRIMARY);
     atapiDevices[1].emplace(ATAPI::Device::Bus::SECONDARY);
 
     TTY::Print("Initializing ISO CD-ROM\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-    static std::optional<ISO9660::Device> isoCdrom;
     isoCdrom.emplace(atapiDevices[1].value());
 
 #if 0
@@ -260,255 +246,11 @@ void Kernel_Main()
 #endif
 
     TTY::Print("Finished!\n");
-    bootTerm->Redraw();
-    UI::Manager::Get().Draw(*bootTerm, 0, 0);
-
-    bootTerm.reset();
-
-    // 0x1000000;
-    g_Desktop.emplace();
-    g_Desktop->x = 0;
-    g_Desktop->y = 0;
-    g_Desktop->width = g_KFrameBuffer.width;
-    g_Desktop->height = g_KFrameBuffer.height;
-    UI::Manager::Get().SetRoot(*g_Desktop);
-
-    HimemAlloc::Print(HimemAlloc::Manager::GetDefault());
-
-    auto& exeIcon = g_Desktop->AddChild<UI::DesktopIcon>();
-    exeIcon.x = 64;
-    exeIcon.y = 64;
-    exeIcon.width = 64;
-    exeIcon.height = 64;
-    exeIcon.SetText("Hello world");
-
-    auto& taskbar = g_Desktop->AddChild<UI::Taskbar>();
-    taskbar.x = 0;
-    taskbar.y = g_KFrameBuffer.height - 20;
-    taskbar.width = g_KFrameBuffer.width;
-    taskbar.height = 20;
-
-    auto& startBtn = taskbar.AddChild<UI::Button>();
-    startBtn.x = 0;
-    startBtn.y = 0;
-    startBtn.width = 64;
-    startBtn.height = 12;
-    startBtn.SetText("Start");
-    startBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void
-    {
-        static std::optional<UI::Taskbar> startMenu;
-        if (startMenu.has_value())
-        {
-            startMenu.reset();
-            return;
-        }
-
-        startMenu.emplace();
-        startMenu->flex = UI::Widget::Flex::COLUMN;
-        startMenu->width = 96;
-        startMenu->height = 100;
-        startMenu->x = 0;
-        startMenu->y = (g_KFrameBuffer.height - 20) - startMenu->height;
-        g_Desktop->AddChildDirect(startMenu.value());
-
-        auto& serialKeyBtn = startMenu->AddChild<UI::Button>();
-        serialKeyBtn.flex = startMenu->flex;
-        serialKeyBtn.x = serialKeyBtn.y = 0;
-        serialKeyBtn.width = startMenu->width - 12;
-        serialKeyBtn.height = 12;
-        serialKeyBtn.SetText("Enter serial key");
-        serialKeyBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-            auto& serialKeyWin = g_Desktop->AddChild<UI::Window>();;
-            serialKeyWin.SetText("Input your unique serial key");
-            serialKeyWin.x = serialKeyWin.y = 0;
-            serialKeyWin.width = 200;
-            serialKeyWin.height = 64;
-            serialKeyWin.Decorate();
-
-            static std::optional<UI::Textbox> serialKeyTextbox;
-            serialKeyTextbox.emplace();
-            serialKeyTextbox->x = serialKeyTextbox->y = 0;
-            serialKeyTextbox->width = serialKeyWin.width - 12;
-            serialKeyTextbox->height = 12;
-            serialKeyTextbox->SetText("");
-            serialKeyTextbox->SetTooltipText("Your serial key\nHint: It's 'SERIAL0'");
-            serialKeyTextbox->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-
-            });
-            serialKeyWin.AddChildDirect(serialKeyTextbox.value());
-            
-            auto& serialKeyBtn = serialKeyWin.AddChild<UI::Button>();
-            serialKeyBtn.x = 0;
-            serialKeyBtn.y = 16;
-            serialKeyBtn.width = serialKeyWin.width - 12;
-            serialKeyBtn.height = 12;
-            serialKeyBtn.SetText("Check");
-            serialKeyBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-                static char tmpbuf[100];
-                for(size_t i = 0; i < 100; i++)
-                    tmpbuf[i] = serialKeyTextbox->textBuffer[i];
-
-                if(!DRM::Blowfish::IsValidSerialKey(*tmpbuf))
-                {
-                    UI::Manager::Get().ErrorMsg(*"DRM", *"Serial key is invalid, proceeding to crash the OS");
-                }
-            });
-        });
-
-        auto& runBtn = startMenu->AddChild<UI::Button>();
-        runBtn.flex = startMenu->flex;
-        runBtn.x = runBtn.y = 0;
-        runBtn.width = startMenu->width - 12;
-        runBtn.height = 12;
-        runBtn.SetText("Run");
-        runBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-            auto& runWin = g_Desktop->AddChild<UI::Window>();;
-            runWin.SetText("Run a program");
-            runWin.x = runWin.y = 0;
-            runWin.width = 200;
-            runWin.height = 64;
-            runWin.Decorate();
-
-            static std::optional<UI::Textbox> filepathTextbox;
-            filepathTextbox.emplace();
-            filepathTextbox->x = filepathTextbox->y = 0;
-            filepathTextbox->width = runWin.width - 12;
-            filepathTextbox->height = 12;
-            filepathTextbox->SetText("");
-            filepathTextbox->SetTooltipText("The filepath for executing the program");
-            filepathTextbox->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-
-            });
-            runWin.AddChildDirect(filepathTextbox.value());
-
-            static Task::TSS* runTask = nullptr;
-            static bool performRunTask = false;
-            auto& runBtn = runWin.AddChild<UI::Button>();
-            runBtn.x = 0;
-            runBtn.y = 16;
-            runBtn.width = runWin.width - 12;
-            runBtn.height = 12;
-            runBtn.SetText("Run");
-            runBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-                if(runTask != nullptr)
-                    performRunTask = true;
-                
-                runTask = &Task::Add([]() -> void  {
-                doRunTask:
-                    static char tmpbuf[100];
-                    for(size_t i = 0; i < 100; i++)
-                        tmpbuf[i] = filepathTextbox->textBuffer[i];
-
-                    static auto* imageBase = (void *)0x1000000;
-                    static size_t offset = 0;
-                    auto r = isoCdrom->ReadFile("chess.exe;1", [](void *data, size_t len) -> bool {
-                        TTY::Print("Reading 0x%x bytes at %p\n", len, (uint8_t *)imageBase + offset);
-                        std::memcpy((uint8_t *)imageBase + offset, data, len);
-                        offset += len;
-                        return true;
-                    });
-
-                    if (!r)
-                    {
-                        auto& errorWin = g_Desktop->AddChild<UI::Window>();
-                        errorWin.SetText("Error notFound");
-                        errorWin.x = errorWin.y = 0;
-                        errorWin.width = 150;
-                        errorWin.height = 48;
-                        errorWin.Decorate();
-                        while (!errorWin.isClosed)
-                            Task::Switch();
-                    }
-                    else
-                    {
-                        TTY::Print("Executing at %p!\n", imageBase);
-                        auto *mainFunc = reinterpret_cast<int (*)(char32_t[])>(imageBase);
-                        int r = mainFunc(nullptr);
-                        //Task::Add(, nullptr, false);
-                    }
-
-                    while(!performRunTask)
-                        ;
-                    goto doRunTask;
-                }, nullptr, false);
-            });
-        });
-
-        auto& systemBtn = startMenu->AddChild<UI::Button>();
-        systemBtn.flex = startMenu->flex;
-        systemBtn.x = systemBtn.y = 0;
-        systemBtn.width = startMenu->width - 12;
-        systemBtn.height = 12;
-        systemBtn.SetText("System");
-        systemBtn.OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-            Task::Add([]()
-            {
-                auto& systemWin = g_Desktop->AddChild<UI::Window>();
-                systemWin.SetText("System information");
-                systemWin.x = 0;
-                systemWin.y = 0;
-                systemWin.width = 200;
-                systemWin.height = 150;
-                systemWin.Decorate();
-
-                auto& infoTextbox = systemWin.AddChild<UI::Textbox>();
-                infoTextbox.SetText("...");
-                infoTextbox.y = infoTextbox.x = 0;
-                infoTextbox.width = systemWin.width - 24;
-                infoTextbox.height = systemWin.height - 32;
-                infoTextbox.OnUpdate = [](UI::Widget& w)
-                {
-                    auto& o = static_cast<UI::Textbox&>(w);
-                    auto fmtPrint = [](const char *fmt, ...)
-                    {
-                        va_list args;
-                        va_start(args, fmt);
-                        static char tmpbuf[300] = {};
-                        TTY::Print_1(tmpbuf, sizeof(tmpbuf), fmt, args);
-                        va_end(args);
-                        return tmpbuf;
-                    };
-                    auto ts = Task::GetSummary();
-                    auto& mm = HimemAlloc::Manager::GetDefault();
-                    auto ms = HimemAlloc::GetInfo(mm);
-                    o.SetText(fmtPrint("ATasks: %u\nTTasks: %u\nMRegions: %u\nMTotal: %uB\nMFree: %uB\nMUsed: %uB", ts.nActive, ts.nTotal, mm.max_regions, ms.total, ms.free, ms.total - ms.free));
-                };
-                infoTextbox.OnUpdate(infoTextbox);
-
-                while (!systemWin.isClosed)
-                    Task::Switch();
-            }, nullptr, false);
-        });
-
-#if 0
-        static std::optional<UI::Button> tourBtn;
-        tourBtn.emplace();
-        tourBtn->flex = startMenu->flex;
-        tourBtn->x = tourBtn->y = 0;
-        tourBtn->width = startMenu->width - 12;
-        tourBtn->height = 12;
-        tourBtn->SetText("Take a tour");
-        tourBtn->OnClick = ([](UI::Widget &, unsigned, unsigned, bool, bool) -> void {
-
-        });
-        startMenu->AddChildDirect(tourBtn.value());
-#endif
-    });
-
     TTY::Print("System ready! Welcome to UDOS!\n");
     HimemAlloc::Print(HimemAlloc::Manager::GetDefault());
     // Filesys::Init();
-
-    auto &uiMan = UI::Manager::Get();
     while (1)
     {
-        char32_t ch = ps2Keyboard->GetKey();
-        uiMan.Draw(g_Desktop.value(), 0, 0);
-        uiMan.CheckRedraw(g_Desktop.value(), 0, 0);
-        uiMan.CheckUpdate(g_Desktop.value(), ps2Mouse->GetX(), ps2Mouse->GetY(),
-                          ps2Mouse->buttons[0], ps2Mouse->buttons[1], ch);
-        uiMan.Update();
-        g_KFrameBuffer.MoveMouse(ps2Mouse->GetX(), ps2Mouse->GetY());
         Task::Switch();
     }
 }

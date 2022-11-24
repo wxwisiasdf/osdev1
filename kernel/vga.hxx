@@ -4,10 +4,10 @@
 #include <cstdint>
 #include "tty.hxx"
 
-struct VGA : public TTY::Terminal
+struct VGATerm : public TTY::Terminal
 {
-    volatile uint16_t *vga_text_addr = (volatile uint16_t *)0xB8000L;
-    enum VGA_Color
+    volatile uint16_t *vgaTextAddr = (volatile uint16_t *)0xB8000L;
+    enum VGAColor
     {
         BLACK,
         BLUE,
@@ -27,13 +27,15 @@ struct VGA : public TTY::Terminal
         YELLOW,
         WHITE
     };
-    int color = 0x0F;
+    uint8_t color = 0x0F;
 
-    VGA();
-    VGA(VGA&) = delete;
-    VGA(VGA&&) = delete;
-    VGA& operator=(const VGA&) = delete;
-    virtual ~VGA() = default;
+    VGATerm();
+    VGATerm(VGATerm&) = delete;
+    VGATerm(VGATerm&&) = delete;
+    VGATerm& operator=(const VGATerm&) = delete;
+    virtual ~VGATerm() = default;
+    void Newline();
+    void Putc(char32_t ch);
     void PlotChar(char32_t ch);
 };
 
