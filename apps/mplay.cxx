@@ -7,7 +7,7 @@
 #include <kernel/tty.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
-int UDOS_32Main(char32_t[])
+__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
 {
     TTY::Print("multimedia spieler: Wilkommen");
 #if 0

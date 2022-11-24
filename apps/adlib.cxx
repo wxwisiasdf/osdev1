@@ -1,8 +1,25 @@
 #include <cstdint>
-#include "adlib.hxx"
-#include "vendor.hxx"
-#include "tty.hxx"
-#include "task.hxx"
+#include <cstddef>
+#include <kernel/vendor.hxx>
+#include <kernel/tty.hxx>
+#include <kernel/task.hxx>
+
+namespace AdLib
+{
+class Device
+{
+    void Write(unsigned char reg, unsigned char val) const;
+public:
+    Device();
+    ~Device() = default;
+
+    bool IsPresent() const;
+    //void InitChannel(int channel);
+    void Resume();
+    void Pause();
+    void PlayNote(int channel, unsigned short freq, unsigned char octave);
+};
+}
 
 #define ADLIB_ADDRESS 0x388
 #define ADLIB_STATUS 0x388

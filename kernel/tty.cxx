@@ -1,8 +1,8 @@
 #include <optional>
 #include <string>
 #include <type_traits>
-import uart;
-import locale;
+#include "uart.hxx"
+#include "locale.hxx"
 #include <cstdint>
 #include "tty.hxx"
 #include "vendor.hxx"
@@ -90,16 +90,17 @@ void TTY::BufferTerminal::Putc(char32_t ch)
     TTY::BufferTerminal::PlotChar(ch);
 }
 
-char *TTY::BufferTerminal::GetBuffer()
+const char *TTY::BufferTerminal::GetBuffer()
 {
-    return this->buffer;
+    return this->buffer.data();
 }
 
 void TTY::BufferTerminal::PlotChar(char32_t ch)
 {
-    this->buffer[this->nBuffer++] = ch;
-    if (this->nBuffer >= sizeof(this->buffer))
-        this->nBuffer = 0;
+    if(!this->buffer.empty() && this->buffer[this->buffer.size() - 1] == '\0')
+        this->buffer[this->buffer.size() - 1] = ch;
+    else
+        this->buffer.push_back(ch);
 }
 
 void TTY::BufferTerminal::Newline()

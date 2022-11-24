@@ -1,5 +1,5 @@
 #include "vga.hxx"
-import locale;
+#include "locale.hxx"
 
 VGA::VGA()
     : TTY::Terminal()

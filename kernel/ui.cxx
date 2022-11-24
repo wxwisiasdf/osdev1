@@ -642,7 +642,6 @@ void UI::Terminal::Draw()
     if (!this->skeleton)
         g_KFrameBuffer.FillSquare(this->ox, this->oy, this->width, this->height, Color(0x000000));
     this->DrawShadow(Color(0x000000), Color(0xFFFFFF), Color(0x808080));
-    this->term.GetBuffer()[MAX_TERM_BUF - 1] = '\0';
     this->SetText(this->term.GetBuffer());
     this->DrawText(this->ox + 4, this->oy + 4, Color(0xFFFFFF));
 }

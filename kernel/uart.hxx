@@ -1,12 +1,8 @@
-module;
-
 #include <cstdint>
 #include <optional>
 #include "vendor.hxx"
 
-export module uart;
-
-export namespace UART
+namespace UART
 {
 struct Device
 {

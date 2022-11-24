@@ -8,7 +8,7 @@
 #include <kernel/alloc.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
-int UDOS_32Main(char32_t[])
+__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
 {
     auto& calcWindow = g_Desktop->AddChild<UI::Window>();
     calcWindow.x = 0;
@@ -39,7 +39,7 @@ int UDOS_32Main(char32_t[])
     eqBtn.width = 12;
     eqBtn.height = 12 + 16;
     eqBtn.SetText("=");
-
+    
     auto& minusBtn = calcWindow.AddChild<UI::Button>();
     minusBtn.x = 16 * 3;
     minusBtn.y = 0;

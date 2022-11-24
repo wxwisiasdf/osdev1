@@ -7,7 +7,7 @@
 #include <kernel/tty.hxx>
 
 extern std::optional<UI::Desktop> g_Desktop;
-int UDOS_32Main(char32_t[])
+__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
 {
     static std::optional<UI::Window> consoleWin;
     consoleWin.emplace();
@@ -49,5 +49,6 @@ int UDOS_32Main(char32_t[])
 
     while (!consoleWin->isClosed)
         Task::Switch();
+    consoleWin->Kill();
     return 0;
 }

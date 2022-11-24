@@ -1,4 +1,4 @@
-import pic;
+#include "pic.hxx"
 #include "atapi.hxx"
 #include "assert.hxx"
 #include "vendor.hxx"

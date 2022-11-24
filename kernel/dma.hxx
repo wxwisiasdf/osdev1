@@ -1,12 +1,8 @@
-module;
-
 #include <cstdint>
 #include <cstddef>
 #include "vendor.hxx"
 
-export module dma;
-
-export namespace DMA
+namespace DMA
 {
 enum ChanMode
 {

@@ -30,12 +30,10 @@ all: build
 run: newos.iso build
 	objdump -S -C -d isodir/boot/kernel.elf >dump.txt
 	objdump -t isodir/boot/kernel.elf | sort >>dump.txt
-	qemu-system-x86_64 -s -cdrom newos.iso -smp 2 \
-		-d guest_errors,pcall,strace -trace ps2* -no-reboot \
-		-vga cirrus -audiodev alsa,id=alsa -device sb16,audiodev=alsa \
-		-serial stdio -device usb-ehci \
-		-device usb-tablet \
-		2>qemu.txt
+	qemu-system-x86_64 -s -cdrom newos.iso \
+		-d guest_errors,pcall,strace \
+		-serial stdio -vga cirrus \
+		-usb -device usb-kbd -device usb-tablet 2>qemu.txt
 
 build: newos.iso
 	$(MAKE) -C tools build

@@ -1,12 +1,8 @@
-module;
-
-import pci;
+#include <kernel/pci.hxx>
 #include <cstdint>
 #include <cstddef>
-#include "tty.hxx"
-#include "vendor.hxx"
-
-export module rtl81xx;
+#include <kernel/tty.hxx>
+#include <kernel/vendor.hxx>
 
 // 8K+16 = Minimum buffer for RTL
 #define RX_BUFFER_SIZE 8192 + 16
@@ -17,7 +13,7 @@ export module rtl81xx;
 #define RCR_WRAP 1 << 7
 #define MAX_TX_CHUNK_SIZE 1792 // Max TX bytes that can be sent at once
 
-export namespace RTL81XX
+namespace RTL81XX
 {
 struct Device : public PCI::Device
 {

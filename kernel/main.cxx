@@ -14,17 +14,14 @@
 #include "ui.hxx"
 #include "load.hxx"
 #include "audio.hxx"
-#include "adlib.hxx"
-#include "floppy.hxx"
 #include "alloc.hxx"
 
-import pic;
-import uart;
-import pci;
-import usb;
-import ps2;
-import locale;
-import filesys;
+#include "pic.hxx"
+#include "uart.hxx"
+#include "pci.hxx"
+#include "ps2.hxx"
+#include "locale.hxx"
+#include "filesys.hxx"
 
 struct Regs
 {
@@ -114,6 +111,7 @@ extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
     static std::optional<TTY::Terminal> comTerm;
     comTerm.emplace();
     comTerm->AttachToKernel(comTerm.value());
+
     TTY::Print("Hello world\n");
     TTY::Print("Numbers %i,%u!!!\n", 69, 420);
 
@@ -143,7 +141,7 @@ extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
     }
 
     GDT::Init();
-    IDT_Init();
+    IDT::Init();
     GDT::SetupTSS();
     // Code should've jumped to Kernel_Main by now
 }
@@ -168,7 +166,7 @@ static inline std::vector<std::string> SplitStrings(const std::string& s, char s
     output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
     return output;
 }
-#endif
+#endif 
 
 // Main event handler, for keyboard and mouse
 static bool kernelMainLock = false;
@@ -185,7 +183,26 @@ void Kernel_Main()
     Task::EnableSwitch();
     asm("sti"); // Always enable interrupts on the dummy task
 
+    static std::optional<UI::Terminal> bootTerm;
+    bootTerm.emplace();
+    bootTerm->x = bootTerm->y = 0;
+    bootTerm->width = g_KFrameBuffer.width;
+    bootTerm->height = g_KFrameBuffer.height;
+    bootTerm->term.AttachToKernel(bootTerm->term);
+
+    TTY::Print("Initializing early boot\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
+
+    TTY::Print("Enabled interrupts and dying softly\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
+
     // Controllers
+    TTY::Print("Initializing EHCI USB\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
+
     static std::optional<EHCI::Device> usbDevice;
     usbDevice.emplace(PCI::Device
     {
@@ -193,44 +210,51 @@ void Kernel_Main()
         .slot = 4,
         .func = 0,
     });
+
+    TTY::Print("Initializing PS2\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
+
     static std::optional<PS2::Controller> ps2Controller;
     ps2Controller.emplace();
 
     // Input
+    TTY::Print("Initializing PS2 keyboard\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
     static std::optional<PS2::Keyboard> ps2Keyboard;
     ps2Keyboard.emplace(ps2Controller.value());
+
+    TTY::Print("Initializing the fucking PS2 mouse\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
     static std::optional<PS2::Mouse> ps2Mouse;
     ps2Mouse.emplace(ps2Controller.value());
 
-    // Audio
-    static std::optional<AdLib::Device> adlibDevice;
-    adlibDevice.emplace();
-
     // Storage
-    static std::optional<Floppy::Driver> floppyDriver;
-    floppyDriver.emplace();
-
+    TTY::Print("Initializing ATAPI\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
     static std::optional<ATAPI::Device> atapiDevices[2];
     atapiDevices[0].emplace(ATAPI::Device::Bus::PRIMARY);
     atapiDevices[1].emplace(ATAPI::Device::Bus::SECONDARY);
 
+    TTY::Print("Initializing ISO CD-ROM\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
     static std::optional<ISO9660::Device> isoCdrom;
     isoCdrom.emplace(atapiDevices[1].value());
 
 #if 0
-    static char *menuCfgData = nullptr;
-    static size_t menuCfgSize = 0;
+    static std::string menuConfig;
     auto r = isoCdrom->ReadFile("menu.cfg;1", [](void *data, size_t len) -> bool
     {
         TTY::Print("Taskbar config: %s\n", data);
-        menuCfgData = (char *)HimemAlloc::Realloc(HimemAlloc::Manager::GetDefault(), menuCfgData, menuCfgSize + len);
-        std::memcpy(menuCfgData + menuCfgSize, data, len);
-        menuCfgSize += len;
+        menuConfig += (const char *)data;
         return true;
     });
-    TTY::Print("Taskbar config (%u): %s\n", menuCfgSize, menuCfgData);
-
-    const auto lines = SplitStrings(std::string{ menuCfgData }, '\n');
+    TTY::Print("Taskbar config (%u): %s\n", menuConfig.size(), menuConfig.c_str());
+    const auto lines = SplitStrings(menuConfig, '\n');
     for(const auto& line : lines)
     {
         const auto data = SplitStrings(line, ';');
@@ -245,6 +269,12 @@ void Kernel_Main()
         const auto& filename = data[2];
     }
 #endif
+
+    TTY::Print("Finished!\n");
+    bootTerm->Redraw();
+    UI::Manager::Get().Draw(*bootTerm, 0, 0);
+
+    bootTerm.reset();
 
     // 0x1000000;
     g_Desktop.emplace();
@@ -331,15 +361,15 @@ void Kernel_Main()
                 {
                     performRunTask = true;
                 }
-                runTask = Task::Add([]() -> void  {
+                runTask = &Task::Add([]() -> void  {
                 doRunTask:
                     static char tmpbuf[100];
                     for(size_t i = 0; i < 100; i++)
-                        tmpbuf[i] = Locale::Convert<Locale::Charset::ASCII, Locale::Charset::NATIVE>((char)filepathTextbox->textBuffer[i]);
+                        tmpbuf[i] = filepathTextbox->textBuffer[i];
 
                     static auto* imageBase = (void *)0x1000000;
                     static size_t offset = 0;
-                    auto r = isoCdrom->ReadFile(tmpbuf, [](void *data, size_t len) -> bool {
+                    auto r = isoCdrom->ReadFile("chess.exe;1", [](void *data, size_t len) -> bool {
                         TTY::Print("Reading 0x%x bytes at %p\n", len, (uint8_t *)imageBase + offset);
                         std::memcpy((uint8_t *)imageBase + offset, data, len);
                         offset += len;

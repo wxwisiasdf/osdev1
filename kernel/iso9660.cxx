@@ -1,7 +1,7 @@
 #include <new>
 #include "iso9660.hxx"
 #include "atapi.hxx"
-import locale;
+#include "locale.hxx"
 #include "tty.hxx"
 
 ISO9660::Device::Device(ATAPI::Device &_dev)

@@ -6,8 +6,7 @@
 #include <cstdarg>
 #include <type_traits>
 #include <atomic>
-
-#define MAX_TERM_BUF 512
+#include <vector>
 
 namespace TTY
 {
@@ -51,16 +50,14 @@ public:
 class BufferTerminal : public Terminal
 {
 protected:
-    char buffer[MAX_TERM_BUF] = {};
-    unsigned nBuffer = 0;
-
+    std::vector<char> buffer;
 public:
     BufferTerminal();
     BufferTerminal(BufferTerminal &) = delete;
     BufferTerminal(BufferTerminal &&) = delete;
     BufferTerminal &operator=(const BufferTerminal &) = delete;
     virtual ~BufferTerminal() = default;
-    char *GetBuffer();
+    const char *GetBuffer();
     void Putc(char32_t ch);
     void PlotChar(char32_t ch);
     void Newline();

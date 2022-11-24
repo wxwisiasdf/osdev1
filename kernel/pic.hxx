@@ -1,11 +1,10 @@
-module;
+#ifndef PIC_HXX
+#define PIC_HXX 1
 
 #include <cstdint>
 #include "vendor.hxx"
 #include "tty.hxx"
 #include "assert.hxx"
-
-export module pic;
 
 #define PIC1 0x20 // IO base address for master PIC
 #define PIC2 0xA0 // IO base address for slave PIC
@@ -14,7 +13,7 @@ export module pic;
 #define PIC2_COMMAND PIC2
 #define PIC2_DATA (PIC2 + 1)
 
-export class PIC
+class PIC
 {
     static PIC pic;
 public:
@@ -113,3 +112,4 @@ extern "C" void IntF5h_Handler()
     PIC::Get().EOI(13);
 }
 
+#endif

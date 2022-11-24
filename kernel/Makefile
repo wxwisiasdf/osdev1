@@ -21,22 +21,9 @@ LDFLAGS += \
 
 # Low-level bootstrap devices
 KERNEL_CXX_SRCS := \
-	locale.cxx \
-	pic.cxx \
-	pit.cxx \
-	uart.cxx \
-	ps2.cxx \
-	pci.cxx \
-	dma.cxx \
-	usb.cxx \
-	ubsan.cxx \
-	filesys.cxx
+	ubsan.cxx
 
 # Middle-end devices
-KERNEL_CXX_SRCS += \
-	rtl81xx.cxx \
-	sb16.cxx
-
 KERNEL_CXX_SRCS += \
 	main.cxx \
 	gdt.cxx \
@@ -47,8 +34,6 @@ KERNEL_CXX_SRCS += \
 	task.cxx \
 	load.cxx \
 	alloc.cxx \
-	floppy.cxx \
-	adlib.cxx \
 	atapi.cxx \
 	iso9660.cxx \
 	string.cxx \

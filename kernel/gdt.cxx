@@ -1,4 +1,7 @@
 #include <cstddef>
+#include <algorithm>
+#include <vector>
+#include <optional>
 #include "gdt.hxx"
 #include "task.hxx"
 #include "tty.hxx"
@@ -93,13 +96,13 @@ void GDT::SetupTSS()
 
     static uint8_t dummyTaskStack[1024];
     Task::Add([]() -> void
-    {
+              {
         while (1)
         {
             //TTY::Print("A");
             Task::Switch();
-        }
-    }, &dummyTaskStack[sizeof(dummyTaskStack) - 1], false);
+        } },
+              &dummyTaskStack[sizeof(dummyTaskStack) - 1], false);
 
     GDT::Reload();                 // Apply visable changes
     asm volatile("\tlldt %%ax\r\n" // Load our local LDT
@@ -139,19 +142,25 @@ static struct
 {
     IDT_Entry entries[256] = {};
     IDT_Desc desc =
-    {
-        .size = sizeof(entries) - 1,
-        // TODO: Aliasing violation
-        .offset = (uintptr_t)&entries[0]
-    };
+        {
+            .size = sizeof(entries) - 1,
+            // TODO: Aliasing violation
+            .offset = (uintptr_t)&entries[0]};
 } idt;
 
-#define INT_STUB(x)                            \
-    extern "C" void Int##x##h_AsmStub();       \
-    extern "C" void Int##x##h_Handler()        \
-    {                                          \
-        TTY::Print("Unhandled int " #x "h\n"); \
-        while (1);                             \
+static std::optional<std::vector<void (*)(void)>> handlers[255];
+
+#define INT_STUB(x)                                  \
+    extern "C" void Int##x##h_AsmStub();             \
+    extern "C" void Int##x##h_Handler()              \
+    {                                                \
+        if (handlers[0x##x]->empty())                \
+        {                                            \
+            TTY::Print("Unhandled int " #x "h\n");   \
+            return;                                  \
+        }                                            \
+        for (const auto &handler : *handlers[0x##x]) \
+            handler();                               \
     }
 
 extern "C" void Int00h_AsmStub();
@@ -204,40 +213,40 @@ struct V86_IntContext
 extern "C" void IntException_Handler(uint32_t irq, V86_IntContext &ctx)
 {
     static const char *errorNames[32] =
-    {
-        "Divide-by-zero Error",           // 0x00
-        "Debug",                          // 0x01
-        "Non-maskable Interrupt",         // 0x02
-        "Breakpoint",                     // 0x03
-        "Overflow",                       // 0x04
-        "Bound Range Exceeded",           // 0x05
-        "Invalid Opcode",                 // 0x06
-        "Device Not Available",           // 0x07
-        "Double Fault",                   // 0x08
-        "Coprocessor Segment Overrun",    // 0x09
-        "Invalid TSS",                    // 0x0A
-        "Segment Not Present",            // 0x0B
-        "Stack-Segment Fault",            // 0x0C
-        "General Protection Fault",       // 0x0D
-        "Page Fault",                     // 0x0E
-        "Reserved",                       // 0x0F
-        "x87 Floating-Point Exception",   // 0x10
-        "Alignment Check",                // 0x11
-        "Machine Check",                  // 0x12
-        "SIMD Floating-Point Exception",  // 0x13
-        "Virtualization Exception",       // 0x14
-        "Control Protection Exception",   // 0x15
-        "Reserved",                       // 0x16
-        "Reserved",                       // 0x17
-        "Reserved",                       // 0x18
-        "Reserved",                       // 0x19
-        "Reserved",                       // 0x1A
-        "Reserved",                       // 0x1B
-        "Hypervisor Injection Exception", // 0x1C
-        "VMM Communication Exception",    // 0x1D
-        "Security Exception",             // 0x1E
-        "Reserved"                        // 0x1F
-    };
+        {
+            "Divide-by-zero Error",           // 0x00
+            "Debug",                          // 0x01
+            "Non-maskable Interrupt",         // 0x02
+            "Breakpoint",                     // 0x03
+            "Overflow",                       // 0x04
+            "Bound Range Exceeded",           // 0x05
+            "Invalid Opcode",                 // 0x06
+            "Device Not Available",           // 0x07
+            "Double Fault",                   // 0x08
+            "Coprocessor Segment Overrun",    // 0x09
+            "Invalid TSS",                    // 0x0A
+            "Segment Not Present",            // 0x0B
+            "Stack-Segment Fault",            // 0x0C
+            "General Protection Fault",       // 0x0D
+            "Page Fault",                     // 0x0E
+            "Reserved",                       // 0x0F
+            "x87 Floating-Point Exception",   // 0x10
+            "Alignment Check",                // 0x11
+            "Machine Check",                  // 0x12
+            "SIMD Floating-Point Exception",  // 0x13
+            "Virtualization Exception",       // 0x14
+            "Control Protection Exception",   // 0x15
+            "Reserved",                       // 0x16
+            "Reserved",                       // 0x17
+            "Reserved",                       // 0x18
+            "Reserved",                       // 0x19
+            "Reserved",                       // 0x1A
+            "Reserved",                       // 0x1B
+            "Hypervisor Injection Exception", // 0x1C
+            "VMM Communication Exception",    // 0x1D
+            "Security Exception",             // 0x1E
+            "Reserved"                        // 0x1F
+        };
 
     if (irq != 0x08)
     {
@@ -471,9 +480,8 @@ extern "C" void IntE9h_Handler();
 INT_STUB(EA);
 INT_STUB(EB);
 INT_STUB(EC);
-// INT_STUB(ED); -- Implemented by sb16.cxx
-extern "C" void IntEDh_AsmStub();
-extern "C" void IntEDh_Handler();
+// INT_STUB(ED); -- Overriden by sb16.exe
+INT_STUB(ED);
 INT_STUB(EE);
 INT_STUB(EF);
 INT_STUB(F0);
@@ -501,11 +509,28 @@ INT_STUB(FD);
 INT_STUB(FE);
 INT_STUB(FF);
 
-#define SET_ASM_STUB(x) \
-    idt.entries[0x##x].set_offset((uintptr_t)&Int##x##h_AsmStub);
+#define SET_ASM_STUB(x) IDT::SetEntry(0x##x, &Int##x##h_AsmStub);
 
-void IDT_Init()
+void IDT::AddHandler(int n, void (*fn)(void))
 {
+    handlers[n]->push_back(fn);
+}
+
+void IDT::RemoveHandler(int n, void (*fn)(void))
+{
+    handlers[n]->erase(std::remove(handlers[n]->begin(), handlers[n]->end(), fn), handlers[n]->end());
+}
+
+void IDT::SetEntry(int n, void (*fn)(void))
+{
+    idt.entries[n].set_offset((uintptr_t)fn);
+}
+
+void IDT::Init()
+{
+    for (size_t i = 0; i < 256; i++)
+        handlers[i].emplace();
+
     // Exceptions
     for (size_t i = 0x00; i < 0x20; i++)
     {

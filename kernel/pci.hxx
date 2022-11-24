@@ -1,9 +1,5 @@
-module;
-
 #include <cstdint>
 #include "vendor.hxx"
-
-export module pci;
 
 #define PCI_MAX_SEGMENTS 65535
 #define PCI_MAX_BUSES 256
@@ -11,7 +7,7 @@ export module pci;
 #define PCI_MAX_FUNCS 8
 #define PCI_ECAM_SIZE 4096
 
-export namespace PCI
+namespace PCI
 {
 struct Capability
 {

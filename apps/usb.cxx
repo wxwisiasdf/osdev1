@@ -1,13 +1,9 @@
-module;
-
-import pci;
+#include <kernel/pci.hxx>
 #include <cstdint>
 #include <cstddef>
-#include "vendor.hxx"
-#include "task.hxx"
-#include "tty.hxx"
-
-export module usb;
+#include <kernel/vendor.hxx>
+#include <kernel/task.hxx>
+#include <kernel/tty.hxx>
 
 // TODO: Is this really the best way to code?
 // TODO: Note that programming interface (IF) of the PCI devices contain 0x20 for USB 2.0 (ehci)
@@ -15,7 +11,7 @@ export module usb;
 // TODO: Finish the driver
 // TODO: Read even more the spec, don't leave shit midway >:(
 
-export namespace EHCI
+namespace EHCI
 {
 constexpr auto USBLEGSUP = 0;
 constexpr auto USBLEGCTLSTS = 4;
@@ -69,6 +65,12 @@ struct Device : public PCI::Device
           hccregs{ reinterpret_cast<decltype(hccregs)>(this->base) },
           opregs{ reinterpret_cast<decltype(opregs)>(reinterpret_cast<uint8_t *>(this->base) + this->hccregs->caplen) }
     {
+        if(this->base == reinterpret_cast<decltype(base)>(0xFFFFFFFF))
+        {
+            TTY::Print("ehci: Unsetup base at invalid offset\n");
+            return;
+        }
+
         TTY::Print("ehci: Base at %p\n", this->base);
 
         // We will reset the controller. When we do this the host controller
@@ -140,3 +142,13 @@ struct Device : public PCI::Device
     }
 };
 }
+
+__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+{
+    TTY::Print("USB driver online! ^-^\n");
+    while(1)
+        Task::Switch();
+    TTY::Print("USB driver says goodbye! ^-^ :3\n");
+    return 0;
+}
+

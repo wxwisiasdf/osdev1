@@ -1,4 +1,4 @@
-import locale;
+#include "locale.hxx"
 #include "video.hxx"
 #include "multiboot2.h"
 #include "tty.hxx"

@@ -111,7 +111,6 @@ struct Entry : public GDT::Entry
 } PACKED ALIGN(8);
 }
 
-
 struct IDT_Desc
 {
     uint16_t size;
@@ -148,10 +147,12 @@ struct IDT_Entry
     }
 } PACKED ALIGN(8);
 
-void IDT_Init();
-
 namespace IDT
 {
+void AddHandler(int n, void (*fn)(void));
+void RemoveHandler(int n, void (*fn)(void));
+void SetEntry(int n, void (*fn)(void));
+void Init();
 void SetTaskSegment(int seg);
 }
 

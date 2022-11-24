@@ -1,10 +1,6 @@
-module;
-
-import pic;
+#include "pic.hxx"
 #include "tty.hxx"
 #include "task.hxx"
-
-export module pit;
 
 extern "C" void IntE8h_Handler()
 {

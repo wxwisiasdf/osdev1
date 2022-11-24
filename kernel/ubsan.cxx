@@ -1,14 +1,10 @@
-module;
-
 #include <cstddef>
 #include <atomic>
 #include <cstring>
 #include <cstdint>
 #include "vendor.hxx"
 #include "tty.hxx"
-import locale;
-
-export module ubsan;
+#include "locale.hxx"
 
 extern "C"
 {

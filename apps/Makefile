@@ -28,7 +28,14 @@ PROGRAMS := \
 	system.exe \
 	go.exe \
 	julgonu.exe \
-	console.exe
+	console.exe \
+	chess.exe \
+	rtl81xx.exe \
+	sb16.exe \
+	adlib.exe \
+	floppy.exe \
+	usb.exe
+
 DEPS := $(PROGRAMS:.exe=.d)
 
 all: build

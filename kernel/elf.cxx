@@ -1,7 +1,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
-import locale;
+#include "locale.hxx"
 #include "vendor.hxx"
 
 #define ELF_MAGIC "\x7F\x45\x4c\x46" // The string "ELF" in ASCII

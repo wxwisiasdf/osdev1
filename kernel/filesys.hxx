@@ -1,4 +1,5 @@
-module;
+#ifndef FILESYS_HXX
+#define FILESYS_HXX 1
 
 #include <cstddef>
 #include <vector>
@@ -10,9 +11,7 @@ module;
 #include <memory>
 #include <new>
 
-export module filesys;
-
-export namespace Filesys
+namespace Filesys
 {
 struct File
 {
@@ -123,3 +122,5 @@ void Init()
 
 std::optional<Directory> Directory::g_RootDir;
 }
+
+#endif

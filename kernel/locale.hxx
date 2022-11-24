@@ -1,10 +1,6 @@
-module;
-
 #include <cstddef>
 
-export module locale;
-
-export namespace Locale
+namespace Locale
 {
 constexpr bool IsDigit(char x)
 {

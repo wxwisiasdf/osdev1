@@ -1,22 +1,21 @@
-module;
+#ifndef PS2_HXX
+#define PS2_HXX 1
 
-import pic;
+#include "pic.hxx"
 #include <cstdint>
 #include <cstddef>
 #include "vendor.hxx"
 #include "tty.hxx"
 #include "assert.hxx"
-import locale;
+#include "locale.hxx"
 #include "video.hxx"
 #include "task.hxx"
-
-export module ps2;
 
 #define PS2_DATA 0x60
 #define PS2_STATUS 0x64
 #define PS2_COMMAND 0x64
 
-export namespace Keysym
+namespace Keysym
 {
 consteval char KeyPad(int x)
 {
@@ -83,7 +82,7 @@ consteval char KeyShiftRight()
 }
 };
 
-export namespace PS2
+namespace PS2
 {
 struct Keyboard;
 static Keyboard *g_ps2_keyboard = nullptr;
@@ -637,3 +636,4 @@ extern "C" void IntF4h_Handler()
     Task::EnableSwitch();
 }
 
+#endif

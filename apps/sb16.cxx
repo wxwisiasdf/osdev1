@@ -1,16 +1,16 @@
-module;
+// sb16.exe
+// Soundblaster 16 program
+//
 
-import pic;
-import dma;
-import pci;
+#include <kernel/pic.hxx>
+#include <kernel/dma.hxx>
+#include <kernel/pci.hxx>
 #include <cstdint>
-#include "audio.hxx"
-#include "vendor.hxx"
-#include "assert.hxx"
-#include "task.hxx"
-
-export module sb16;
-
+#include <kernel/audio.hxx>
+#include <kernel/vendor.hxx>
+#include <kernel/assert.hxx>
+#include <kernel/task.hxx>
+#include <kernel/gdt.hxx>
 
 // Soundblaster IRQ table
 static const unsigned char irqToNumber[4][2] =
@@ -21,7 +21,7 @@ static const unsigned char irqToNumber[4][2] =
     { 0x08, 10 }
 };
 
-export struct SoundBlaster16 : public Audio::Driver
+struct SoundBlaster16 : public Audio::Driver
 {
     enum ChannelMode
     {
@@ -192,3 +192,16 @@ extern "C" void IntEDh_Handler()
     PIC::Get().EOI(5);
     Task::EnableSwitch();
 }
+
+extern std::optional<UI::Desktop> g_Desktop;
+__attribute__((section(".text.startup"))) int UDOS_32Main(char32_t[])
+{
+    IDT::AddHandler(0xED, &IntEDh_Handler);
+    TTY::Print("sb16 setup, drive running as TSR!\n");
+    while(1)
+        Task::Switch();
+    TTY::Print("Sb16 driver going offline! ~~ Ciao!\n");
+    IDT::RemoveHandler(0xED, &IntEDh_Handler);
+    return 0;
+}
+
