@@ -107,6 +107,10 @@ extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
             Task::Switch();
     kernelInitLock = true;
 
+    HimemAlloc::InitManager(HimemAlloc::Manager::GetDefault());
+    static uint8_t memHeap[65536 * 8];
+    HimemAlloc::AddRegion(HimemAlloc::Manager::GetDefault(), (void *)memHeap, sizeof(memHeap) - 1);
+
     UART::com[0].emplace(0x3F8); // Initialize COM1
 
     static std::optional<TTY::Terminal> comTerm;
@@ -115,10 +119,6 @@ extern "C" void Kernel_Init(unsigned long magic, uint8_t *addr)
 
     TTY::Print("Hello world\n");
     TTY::Print("Numbers %i,%u!!!\n", 69, 420);
-
-    HimemAlloc::InitManager(HimemAlloc::Manager::GetDefault());
-    static uint8_t memHeap[65536 * 8];
-    HimemAlloc::AddRegion(HimemAlloc::Manager::GetDefault(), (void *)memHeap, sizeof(memHeap) - 1);
 
     if (magic != MULTIBOOT2_BOOTLOADER_MAGIC)
         return;
