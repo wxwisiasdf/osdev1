@@ -12,6 +12,7 @@
 #include <kernel/task.hxx>
 #include <kernel/tty.hxx>
 #include <kernel/assert.hxx>
+#include <kernel/drm.hxx>
 #include <kernel/alloc.hxx>
 #include <kernel/iso9660.hxx>
 #include <kernel/atapi.hxx>

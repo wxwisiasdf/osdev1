@@ -196,10 +196,10 @@ extern "C" void IntEDh_Handler()
 int UDOS_32Main(char32_t[])
 {
     IDT::AddHandler(0xED, &IntEDh_Handler);
-    TTY::Print("sb16 setup, drive running as TSR!\n");
+    TTY::Print("SB16 setup, drive running as TSR!\n");
     while(1)
         Task::Switch();
-    TTY::Print("Sb16 driver going offline! ~~ Ciao!\n");
+    TTY::Print("SB16 driver going offline! ~~ Ciao!\n");
     IDT::RemoveHandler(0xED, &IntEDh_Handler);
     return 0;
 }

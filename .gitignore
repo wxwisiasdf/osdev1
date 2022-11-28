@@ -11,6 +11,8 @@ gcm.cache/
 isodir/
 docs/
 
+apps/ksyms.ld
+
 tools/eezcrypt
 tools/elf2ld
 

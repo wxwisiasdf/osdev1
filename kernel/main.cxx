@@ -251,6 +251,16 @@ void Kernel_Main()
     // Filesys::Init();
     while (1)
     {
+        TTY::Print("UDOS> ");
+
+        char32_t ch = '\0';
+        while(ch != '\n')
+        {
+            ch = ps2Keyboard->GetKey();
+            if(ch != '\0')
+                TTY::Print("%c", ch);
+        }
+
         Task::Switch();
     }
 }

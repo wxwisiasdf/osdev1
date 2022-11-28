@@ -30,10 +30,8 @@ all: build
 run: newos.iso build
 	objdump -S -C -d isodir/boot/kernel.elf >dump.txt
 	objdump -t isodir/boot/kernel.elf | sort >>dump.txt
-	qemu-system-x86_64 -s -cdrom newos.iso \
-		-d guest_errors,pcall,strace \
-		-serial stdio -vga cirrus \
-		-usb -device usb-kbd -device usb-tablet 2>qemu.txt
+	qemu-system-x86_64 -s -cdrom newos.iso -d guest_errors,pcall,strace \
+		-serial stdio 2>qemu.txt
 
 build: newos.iso
 	$(MAKE) -C tools build
