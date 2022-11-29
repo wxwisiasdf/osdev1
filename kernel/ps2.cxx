@@ -7,7 +7,9 @@ PS2::Mouse *PS2::g_ps2_mouse = nullptr;
 extern "C" void IntE9h_Handler()
 {
     Task::DisableSwitch();
+#ifdef DEBUG
     TTY::Print("ps2: Handling IRQ E9 for keyboard\n");
+#endif
     auto &kb = PS2::Keyboard::Get();
     kb.buf[kb.n_buf++] = kb.GetPollKey();
     if (kb.n_buf >= sizeof(kb.buf))
@@ -22,7 +24,9 @@ extern "C" void IntE9h_Handler()
 extern "C" void IntF4h_Handler()
 {
     Task::DisableSwitch();
+#ifdef DEBUG
     TTY::Print("ps2: Handling IRQ F4 for mouse\n");
+#endif
     auto &mouse = PS2::Mouse::Get();
     mouse.PollRead();
     if (mouse.x > g_KFrameBuffer.width - 8)

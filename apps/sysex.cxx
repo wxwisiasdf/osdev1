@@ -212,7 +212,7 @@ int UDOS_32Main(char32_t[])
 
                     static auto* imageBase = (void *)0x1000000;
                     static size_t offset = 0;
-                    auto r = isoCdrom->ReadFile("chess.exe;1", [](void *data, size_t len) -> bool {
+                    auto r = isoCdrom->ReadFile(tmpbuf, [](void *data, size_t len) -> bool {
                         TTY::Print("Reading 0x%x bytes at %p\n", len, (uint8_t *)imageBase + offset);
                         //std::memcpy((uint8_t *)imageBase + offset, data, len);
                         DRM::Blowfish::Decrypt((uint8_t *)imageBase + offset, serialKeyParray, serialKeySbox, data, len);

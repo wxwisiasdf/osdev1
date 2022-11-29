@@ -44,7 +44,7 @@ all: build
 build: $(PROGRAMS)
 
 clean:
-	$(RM) *.elf *.o *.d *.exe
+	$(RM) *.elf *.o *.d *.exe *.rxe
 
 .PHONY: clean build all
 

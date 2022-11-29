@@ -435,11 +435,11 @@ struct Keyboard
         switch (ch)
         {
         case Keysym::KeyCapsLock():
-            this->capslock = true;
+            this->capslock = !this->capslock;
             break;
         case Keysym::KeyShiftLeft():
         case Keysym::KeyShiftRight():
-            this->shift = released;
+            this->shift = !released;
             break;
         default:
             if (released) // Do not prompt on release events

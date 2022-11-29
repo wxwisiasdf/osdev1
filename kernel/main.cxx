@@ -198,26 +198,11 @@ void Kernel_Main()
     Task::EnableSwitch();
     asm("sti"); // Always enable interrupts on the dummy task
 
-    TTY::Print("Initializing early boot\n");
-    TTY::Print("Enabled interrupts and dying softly\n");
-
-    // Controllers
-    TTY::Print("Initializing PS2\n");
-    ps2Controller.emplace();
-
-    // Input
-    TTY::Print("Initializing PS2 keyboard\n");
-    ps2Keyboard.emplace(ps2Controller.value());
-
-    TTY::Print("Initializing the fucking PS2 mouse\n");
+    ps2Controller.emplace(); // Controllers
+    ps2Keyboard.emplace(ps2Controller.value()); // Input
     ps2Mouse.emplace(ps2Controller.value());
-
-    // Storage
-    TTY::Print("Initializing ATAPI\n");
-    atapiDevices[0].emplace(ATAPI::Device::Bus::PRIMARY);
+    atapiDevices[0].emplace(ATAPI::Device::Bus::PRIMARY); // Storage
     atapiDevices[1].emplace(ATAPI::Device::Bus::SECONDARY);
-
-    TTY::Print("Initializing ISO CD-ROM\n");
     isoCdrom.emplace(atapiDevices[1].value());
 
 #if 0
@@ -244,23 +229,59 @@ void Kernel_Main()
         const auto& filename = data[2];
     }
 #endif
-
-    TTY::Print("Finished!\n");
     TTY::Print("System ready! Welcome to UDOS!\n");
     HimemAlloc::Print(HimemAlloc::Manager::GetDefault());
     // Filesys::Init();
+
+    static char serialKey[15] = { 'U', 'D', 'O', 'S', 'B', 'E', 'S', 'T', 'O', 'S', 'E', 'V', 'E', 'R', '\0' };
+    static uint32_t serialKeyParray[32];
+    static uint32_t serialKeySbox[4][256];
+    DRM::Blowfish::GenKey(serialKeyParray, serialKeySbox, serialKey, std::strlen(serialKey));
+
+    static auto* imageBase = (void *)0x1000000;
+    static size_t offset = 0;
     while (1)
     {
-        TTY::Print("UDOS> ");
+        TTY::Print("\nUDOS> ");
 
-        char32_t ch = '\0';
-        while(ch != '\n')
-        {
-            ch = ps2Keyboard->GetKey();
-            if(ch != '\0')
+        char buffer[50] = {};
+        size_t n_buffer = 0;
+        for(int ch = '\0'; ch != '\n'; ch = ps2Keyboard->GetKey()) {
+            if(ch != '\0') {
                 TTY::Print("%c", ch);
+                switch(ch) {
+                case '\b':
+                    if(n_buffer != 0)
+                        n_buffer--;
+                    break;
+                default:
+                    buffer[n_buffer++] = ch;
+                    break;
+                }
+            }
+            //Task::Switch();
         }
+        buffer[n_buffer++] = '\0';
+        TTY::Print("\n(%u)\"%s\"\n", n_buffer, buffer);
 
-        Task::Switch();
+        offset = 0;
+        auto r = isoCdrom->ReadFile(buffer, [](void *data, size_t len) -> bool {
+            TTY::Print("Reading 0x%x bytes at %p\n", len, (uint8_t *)imageBase + offset);
+            //std::memcpy((uint8_t *)imageBase + offset, data, len);
+            DRM::Blowfish::Decrypt((uint8_t *)imageBase + offset, serialKeyParray, serialKeySbox, data, len);
+            offset += len;
+            return true;
+        });
+        if (!r)
+        {
+            TTY::Print("File not found");
+        }
+        else
+        {
+            TTY::Print("Executing at %p!\n", imageBase);
+            const auto* info = reinterpret_cast<AppKit::ProgramInfo*>(imageBase);
+            int r = info->entryPoint(nullptr);
+        }
+        //Task::Switch();
     }
 }

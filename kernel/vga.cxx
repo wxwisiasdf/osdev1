@@ -14,8 +14,8 @@ void VGATerm::Newline()
 {
     if(this->y >= this->rows)
     {
-        std::memset((void *)&this->vgaTextAddr[(this->rows - 1) * this->cols * sizeof(uint16_t)], 0, this->cols * sizeof(uint16_t));
         std::memmove((void *)&this->vgaTextAddr[0], (const void *)&this->vgaTextAddr[this->cols], (this->rows - 1) * this->cols * sizeof(uint16_t));
+        std::memset((void *)&this->vgaTextAddr[(this->rows - 1) * this->cols], 0, this->cols * sizeof(uint16_t));
         this->y = this->rows - 1;
     }
     this->modified = true;
@@ -40,6 +40,12 @@ void VGATerm::Putc(char32_t ch)
         this->PlotChar(ch);
         this->x++;
         break;
+    }
+
+    if(this->x >= this->cols) { // Wrap around
+        this->x = 0;
+        this->y++;
+        this->Newline();
     }
     this->modified = true;
 }

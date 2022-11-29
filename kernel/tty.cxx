@@ -132,6 +132,8 @@ void TTY::Print_1(char *buffer, size_t size, const char *fmt, va_list args)
                 TTY::PrintIntegral<unsigned>(&buffer, size, va_arg(args, unsigned));
             else if (*fmt == 'p' || *fmt == 'x')
                 TTY::PrintIntegral<uintptr_t>(&buffer, size, va_arg(args, uintptr_t), 16);
+            else if (*fmt == 'c')
+                *buffer++ = static_cast<char>(va_arg(args, int));
             else if (*fmt == 's')
             {
                 const auto *s = va_arg(args, const char *);
